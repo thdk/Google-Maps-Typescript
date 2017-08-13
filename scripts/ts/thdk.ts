@@ -19,3 +19,25 @@ namespace thdk{
          }
     }   
 }
+
+namespace thdk {
+    export class Network {
+        public static post(url:string, data:any): Promise<{}> {
+            const deferred = new Deferred();
+
+            // construct an HTTP request
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+
+            // send the collected data as JSON
+            xhr.send(JSON.stringify(data));
+
+            xhr.onloadend = function (data) {
+                deferred.resolve(JSON.parse(xhr.response).data);
+            };
+ 
+            return deferred.promise;
+        }
+    }
+}

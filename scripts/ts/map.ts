@@ -4,7 +4,7 @@ namespace thdk.googlemaps {
         
     }
 
-    export class GoogleMaps {
+    export class GoogleMapService {
         private apiLoaderPromise:Promise<boolean>;
         private deferred:Deferred<boolean>;
         private apikey: string;
