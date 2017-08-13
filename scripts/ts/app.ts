@@ -1,17 +1,25 @@
 namespace thdk.stockarto {
+    declare const $: any;
+    declare const loadGoogleMaps: any;
+    declare const config: IAppConfig;
+
+    export interface IAppConfig {
+        googleapikey:string;
+    }
+
     export class App {
-        public start(): void {
-this.initMap();
+        public start(): void {            
+         this.initMap();
         }
 
         private initMap(): void {
-            var map = new thdk.googlemaps.GoogleMaps();
-            map.loadApiAsync().then(success => {
-                console.log("succes"); 
+            const mapservice = new thdk.googlemaps.GoogleMaps(config.googleapikey);
+            mapservice.loadApiAsync().then(success => {
+                mapservice.getMap("sa-map");
             },
-         failure => {
-            console.log("false"); 
-         });
+            failure => {
+                console.log("false"); 
+            });
         }
     }
 
