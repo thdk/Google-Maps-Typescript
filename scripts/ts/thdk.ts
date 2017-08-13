@@ -22,7 +22,7 @@ namespace thdk{
 
 namespace thdk {
     export class Network {
-        public static post(url:string, data:any): Promise<{}> {
+        public postAsync(url:string, data:any): Promise<{}> {
             const deferred = new Deferred();
 
             // construct an HTTP request
@@ -34,7 +34,23 @@ namespace thdk {
             xhr.send(JSON.stringify(data));
 
             xhr.onloadend = function (data) {
-                deferred.resolve(JSON.parse(xhr.response).data);
+                deferred.resolve(JSON.parse(xhr.responseText));
+            };
+ 
+            return deferred.promise;
+        }
+
+        public getAsync(url:string, auth: string): Promise<any> {
+            const deferred = new Deferred();
+
+            // construct an HTTP request
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url);
+                xhr.setRequestHeader('Authorization', auth);
+                xhr.send();
+
+            xhr.onloadend = function (data) {
+                deferred.resolve(JSON.parse(xhr.responseText));
             };
  
             return deferred.promise;

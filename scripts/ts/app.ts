@@ -8,13 +8,35 @@ namespace thdk.stockarto {
     }
 
     export class App {
-        public start(): void {            
-         this.initMap();
-         Network.post("http://httpbin.org/post",true)
-         .then((data) => {
-             console.log(data);
-         });
-        }
+        private shutterstock: stock.ShutterStock;
+        public start(): void {
+            const network = new Network();
+            const ssDeps: stock.IStockDepencies =  {
+                network: network,
+                clientId: "",
+                clientSecret: ""
+            };
+            this.shutterstock = new stock.ShutterStock(ssDeps);
+             const q = $('query').val();
+             this.shutterstock.find("donkey").then(data => {
+                 const container = document.getElementById("imagecontainer");
+                 const imagedata = data.data[1].assets.preview;
+                 var img=document.createElement('img');
+                 img.setAttribute("type","text/javascript");
+                 img.setAttribute("src", imagedata.url);
+                 img.setAttribute("height", imagedata.height);
+                 img.setAttribute("width", imagedata.width);
+                container.appendChild(img);
+
+             })
+            this.initMap();
+        }          
+         
+        //  Network.postAsync("http://httpbin.org/post",true)
+        //  .then((data) => {
+        //      console.log(data);
+        //  });
+        
 
         private initMap(): void {
             const mapservice = new googlemaps.GoogleMapService(config.googleapikey);
