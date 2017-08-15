@@ -1,6 +1,6 @@
 namespace thdk.stock {
     export interface IStock {
-        find(keyword: string): any;
+        findAsync(keyword: string): any;
     }
 
     export interface IStockDepencies {
@@ -11,28 +11,20 @@ namespace thdk.stock {
 
     export class ShutterStock implements IStock {
         private network: Network;
+        private clientId: string;
+        private clientSecret: string;
 
         constructor(deps: IStockDepencies) {
-            this.network = deps.network;            
+            this.network = deps.network;
+            this.clientId = deps.clientId;
+            this.clientSecret = deps.clientSecret;       
         }
 
-        public find(keyword: string): any {
-            // https://${client_id}:${client_secret}@api.shutterstock.com/v2/images/search?query=donkey
-            const clientId = "756b7-ed7a5-06b8a-6b80f-0a052-78ed0";
-            const clientSecret = "2e1ac-344bb-3b6b8-ed1c2-6d983-57555";
+        public findAsync(keyword: string): Promise<shutterstock.ImageSearchResults> {
+            // https://${client_id}:${client_secret}@api.shutterstock.com/v2/images/search?query=donkey           
             keyword = encodeURI(keyword);
-            const url = "https://" + clientId + ":" + clientSecret + "@api.shutterstock.com/v2/images/search?query=" + keyword;
-            return this.network.getAsync(url, 'Basic ' + window.btoa(clientId + ':' + clientSecret))
-            .then(data => {
-                console.log(data);
-                console.log(data.data[0].assets.preview.url);
-                return data;
-                
-            },
-            fail => {
-
-            }
-            );
+            const url = "https://" + this.clientId + ":" + this.clientSecret + "@api.shutterstock.com/v2/images/search?query=" + keyword;
+            return this.network.getAsync<shutterstock.ImageSearchResults>(url, 'Basic ' + window.btoa(this.clientId + ':' + this.clientSecret));
 
         }
     }

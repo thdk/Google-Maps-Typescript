@@ -1,5 +1,4 @@
 namespace thdk.googlemaps {
-    declare const $: any;
     export interface IMap {
         
     }

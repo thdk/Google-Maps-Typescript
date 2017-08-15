@@ -40,8 +40,8 @@ namespace thdk {
             return deferred.promise;
         }
 
-        public getAsync(url:string, auth: string): Promise<any> {
-            const deferred = new Deferred();
+        public getAsync<T>(url:string, auth: string): Promise<T> {
+            const deferred = new Deferred<T>();
 
             // construct an HTTP request
                 var xhr = new XMLHttpRequest();
