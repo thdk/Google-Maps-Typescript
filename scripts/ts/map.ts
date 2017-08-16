@@ -3,6 +3,8 @@ namespace thdk.googlemaps {
         
     }
 
+    
+
     export class GoogleMapService {
         private apiLoaderPromise:Promise<boolean>;
         private deferred:Deferred<boolean>;
@@ -49,6 +51,8 @@ namespace thdk.googlemaps {
             filename += "?key=" + this.apikey;
             filename += "&callback=" + this.callbackname;
             filename += "&libraries=places";
+            filename += "&region=GB";
+            filename += "&language=en-GB";
             var fileref=document.createElement('script');
             fileref.setAttribute("type","text/javascript");
             fileref.setAttribute("src", filename);

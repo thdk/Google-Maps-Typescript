@@ -16,6 +16,9 @@ namespace thdk.stockarto {
 
     export class App {
         private shutterstock: stock.ShutterStock;
+        private place: google.maps.places.PlaceResult;
+        private geocoderResults: google.maps.GeocoderResult[];
+
         public start(): void {
             const network = new Network();
             const ssDeps: stock.IStockDepencies = {
@@ -42,37 +45,43 @@ namespace thdk.stockarto {
             const mapservice = new googlemaps.GoogleMapService(config.google.applicationId);
             mapservice.loadApiAsync().then(success => {
                 const map = mapservice.getMap("sa-map");
+                const placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(map));
+                const geocodingService = new maps.geocoding.GeocodingService(new google.maps.Geocoder());
 
                 google.maps.event.addListener(map, 'click', (event) => {
-                    const geocoder = new google.maps.Geocoder();
 
-                    const request: google.maps.GeocoderRequest = {
-                        location: event.latLng
-                    };
-                    geocoder.geocode(request, (results, status) => {
-                        if (status == google.maps.GeocoderStatus.OK) {
-                            if (results[1]) {
-                                const query = this.generateSearchQuery(results);
-                                $("#query").val(query);
-                                const images = this.shutterstock.findAsync(query)
-                                    .then(imageResults => this.showImageSearchResults(imageResults));
-                                ;
-                            }
-                        } else {
-                            alert("Geocoder failed due to: " + status);
-                        }
+
+                    const promises = new Array();
+                    if (event.placeId) {
+                        promises.push(placesService.getDetailsAsync({ placeId: event.placeId })
+                            .then(result => this.place = result)
+                        );
+                        event.stop();
+                    }
+
+                    promises.push(geocodingService.geocodeAsync({ location: event.latLng })
+                        .then(results => {
+                            this.geocoderResults = results;
+                        }));
+
+                    $.when(promises).then(() => {
+                        let query = this.generateSearchQuery(this.geocoderResults);
+                        if (this.place)
+                            query = this.place + " " + query;
+
+                        this.findAndShowImagesAsync(query);
                     });
                 });
+            });
+        }
 
-            },
-                failure => {
-                    console.log("false");
-                });
+        private findAndShowImagesAsync(query): Promise<any> {
+            $("#query").val(query);
+            return this.shutterstock.findAsync(query)
+                .then(imageResults => this.showImageSearchResults(imageResults));
         }
 
         private generateSearchQuery(geocoderResults: google.maps.GeocoderResult[]): string {
-            console.log(geocoderResults);
-            console.log(geocoderResults[0].address_components);
             const usefulTypeOrder: string[] = ["point_of_interest", "locality", "administrative_area_level_2"];
             const ignoreTypes: string[] = new Array();
             const usefulGeocoderResult: google.maps.GeocoderResult[] = new Array();
@@ -89,6 +98,11 @@ namespace thdk.stockarto {
 
             const query = usefulGeocoderResult[0].address_components[0].short_name;
             return query;
+        }
+
+        private getLocality(addresses: google.maps.GeocoderAddressComponent[]): string {
+            return addresses.filter(a => a.types.indexOf("locality") !== -1)
+                .map(a => a.short_name)[0];
         }
 
         private findImagesAsync(): Promise<shutterstock.ImageSearchResults> {
