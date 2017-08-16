@@ -1,0 +1,32 @@
+$padding: 6px;
+
+#results {
+  width: 1/3 * 100%;
+  float: left;
+  overflow: auto;
+  height: 100%;
+
+  #querybox {
+    height: 5%;
+  }
+
+  #imagecontainer {
+    height: 95%;
+
+    img {
+      width: 100%;
+      height: auto;
+    }
+   }  
+}
+
+#search {
+  width: 2/3 * 100%;
+  float: left;
+  height: 100%;
+
+  #sa-map {
+    width: 100%;
+    height: 100%;
+  }
+}

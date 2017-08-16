@@ -4,9 +4,5 @@
         "module": "commonjs",
         "sourceMap": true,
         "outDir": "../js"
-    },
-    "typeRoots": [
-        // add path to @types
-        "node_modules/@types"
-     ]
+    }
 }

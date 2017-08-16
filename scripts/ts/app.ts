@@ -52,9 +52,9 @@ namespace thdk.stockarto {
                     geocoder.geocode(request, (results, status) => {
                         if (status == google.maps.GeocoderStatus.OK) {
                             if (results[1]) {
-                                console.log(results[1].formatted_address);
-                                // 
-                                const images = this.shutterstock.findAsync(results[1].address_components[0].short_name)
+                                const query = this.generateSearchQuery(results);
+                                $("#query").val(query);
+                                const images = this.shutterstock.findAsync(query)
                                     .then(imageResults => this.showImageSearchResults(imageResults));
                                 ;
                             }
@@ -70,20 +70,46 @@ namespace thdk.stockarto {
                 });
         }
 
+        private generateSearchQuery(geocoderResults: google.maps.GeocoderResult[]): string {
+            console.log(geocoderResults);
+            console.log(geocoderResults[0].address_components);
+            const usefulTypeOrder: string[] = ["point_of_interest", "locality", "administrative_area_level_2"];
+            const ignoreTypes: string[] = new Array();
+            const usefulGeocoderResult: google.maps.GeocoderResult[] = new Array();
+            usefulTypeOrder.forEach(type => {
+                geocoderResults.forEach(result => {
+                    if (!utils.anyMatchInArray(result.types, ignoreTypes)) {
+
+                        const match = utils.findFirst(result.types, t => t === type);
+                        if (match)
+                            usefulGeocoderResult.push(result);
+                    }
+                });
+            });
+
+            const query = usefulGeocoderResult[0].address_components[0].short_name;
+            return query;
+        }
+
         private findImagesAsync(): Promise<shutterstock.ImageSearchResults> {
             const q = $('#query').val();
             return this.shutterstock.findAsync(q);
         }
 
         private showImageSearchResults(results: shutterstock.ImageSearchResults) {
-            const container = document.getElementById("imagecontainer");
-            const imagedata = results.data[1].assets.preview;
-            var img = document.createElement('img');
-            img.setAttribute("type", "text/javascript");
-            img.setAttribute("src", imagedata.url);
-            img.setAttribute("height", imagedata.height.toString());
-            img.setAttribute("width", imagedata.width.toString());
-            container.appendChild(img);
+            if (!results.data.length)
+                return;
+
+            const $container = $("#imagecontainer");
+            $container.empty();
+
+            results.data.forEach(imgData => {
+                const imagedata = imgData.assets.preview;
+                var img = document.createElement('img');
+                img.setAttribute("src", imagedata.url);
+                $container.append(img);
+            });
+
         }
     }
 

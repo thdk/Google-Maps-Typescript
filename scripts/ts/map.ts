@@ -44,17 +44,11 @@ namespace thdk.googlemaps {
 					} catch( e ) {}
 				}, 20);
             };
-
-            //Can't use the jXHR promise because 'script' doesn't support 'callback=?'
-			// $.ajax({
-			// 	dataType: 'script',
-			// 	data: params,
-			// 	url: 'http://maps.google.com/maps/api/js'				
-            // });
             
             let filename = "http://maps.google.com/maps/api/js";
             filename += "?key=" + this.apikey;
             filename += "&callback=" + this.callbackname;
+            filename += "&libraries=places";
             var fileref=document.createElement('script');
             fileref.setAttribute("type","text/javascript");
             fileref.setAttribute("src", filename);
@@ -66,8 +60,8 @@ namespace thdk.googlemaps {
         
         public getMap(id: string): google.maps.Map {
             return new google.maps.Map(document.getElementById(id), {
-                center: {lat: -34.397, lng: 150.644},
-                zoom: 8
+                center: {lat: 51.055605, lng: 3.711732},
+                zoom: 10
              });
         }
     }

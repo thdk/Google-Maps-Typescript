@@ -6,13 +6,19 @@
         {
             "type": "typescript",
             "tsconfig": "scripts\\ts\\tsconfig.json",
-            "problemMatcher": [
-                "$tsc"
-            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "taskName": "Sass Compile",
+            "type": "shell",
+            "command": "node-sass styles\\sass\\styles.scss styles\\css\\styles.css",
+            "group": "build",
+            "problemMatcher": [
+                "$eslint-stylish"
+            ]
         }
     ]
 }
