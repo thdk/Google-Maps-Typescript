@@ -49,12 +49,15 @@ namespace thdk.stockarto {
                 const geocodingService = new maps.geocoding.GeocodingService(new google.maps.Geocoder());
 
                 google.maps.event.addListener(map, 'click', (event) => {
-
+                    this.place = null;
+                    this.geocoderResults = new Array();
 
                     const promises = new Array();
                     if (event.placeId) {
                         promises.push(placesService.getDetailsAsync({ placeId: event.placeId })
-                            .then(result => this.place = result)
+                            .then(result => {
+                                this.place = result;
+                            })
                         );
                         event.stop();
                     }
@@ -64,10 +67,10 @@ namespace thdk.stockarto {
                             this.geocoderResults = results;
                         }));
 
-                    $.when(promises).then(() => {
+                    $.when(...promises).then(() => {
                         let query = this.generateSearchQuery(this.geocoderResults);
                         if (this.place)
-                            query = this.place + " " + query;
+                            query = this.place.name + " " + query;
 
                         this.findAndShowImagesAsync(query);
                     });
@@ -82,7 +85,7 @@ namespace thdk.stockarto {
         }
 
         private generateSearchQuery(geocoderResults: google.maps.GeocoderResult[]): string {
-            const usefulTypeOrder: string[] = ["point_of_interest", "locality", "administrative_area_level_2"];
+            const usefulTypeOrder: string[] = ["locality", "administrative_area_level_2"];
             const ignoreTypes: string[] = new Array();
             const usefulGeocoderResult: google.maps.GeocoderResult[] = new Array();
             usefulTypeOrder.forEach(type => {
