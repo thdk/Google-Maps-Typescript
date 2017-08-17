@@ -64,6 +64,7 @@ namespace thdk.utils {
 }
 
 namespace thdk {
+    // TODO: use fech api here
     export class Network {
         public postAsync(url:string, data:any): Promise<{}> {
             const deferred = new Deferred();
