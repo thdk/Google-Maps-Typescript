@@ -16,8 +16,6 @@ namespace thdk.stockarto {
 
     export class App {
         private shutterstock: stock.ShutterStock;
-        private place: google.maps.places.PlaceResult;
-        private geocoderResults: google.maps.GeocoderResult[];
 
         public start(): void {
             const network = new Network();
@@ -48,33 +46,89 @@ namespace thdk.stockarto {
                 const placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(map));
                 const geocodingService = new maps.geocoding.GeocodingService(new google.maps.Geocoder());
 
+                this.initMapSearch(map);
                 google.maps.event.addListener(map, 'click', (event) => {
-                    this.place = null;
-                    this.geocoderResults = new Array();
 
                     const promises = new Array();
+                    promises.push(geocodingService.geocodeAsync({ location: event.latLng }));
+
                     if (event.placeId) {
-                        promises.push(placesService.getDetailsAsync({ placeId: event.placeId })
-                            .then(result => {
-                                this.place = result;
-                            })
-                        );
+                        promises.push(placesService.getDetailsAsync({ placeId: event.placeId }));
                         event.stop();
                     }
 
-                    promises.push(geocodingService.geocodeAsync({ location: event.latLng })
-                        .then(results => {
-                            this.geocoderResults = results;
-                        }));
-
-                    Promise.all(promises).then(() => {
-                        let query = this.generateSearchQuery(this.geocoderResults);
-                        if (this.place)
-                            query = this.place.name + " " + query;
-
+                    Promise.all(promises).then(responses => {
+                        let query = this.generateSearchQuery(responses.length > 1 ? responses[1] : null, responses[0]);
                         this.findAndShowImagesAsync(query);
                     });
                 });
+            });
+        }
+
+        private initMapSearch(map: google.maps.Map) {
+            // Create the search box and link it to the UI element.
+            var input = <HTMLInputElement>document.getElementById('pac-input');
+            var searchBox = new google.maps.places.SearchBox(input);
+            map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+            // Bias the SearchBox results towards current map's viewport.
+            map.addListener('bounds_changed', () => {
+                searchBox.setBounds(map.getBounds());
+            });
+
+            var markers = [];
+            // Listen for the event fired when the user selects a prediction and retrieve
+            // more details for that place.
+            searchBox.addListener('places_changed', () => {
+                var places = searchBox.getPlaces();
+
+                if (places.length == 0) {
+                    return;
+                }
+
+                // Clear out the old markers.
+                markers.forEach(marker => {
+                    marker.setMap(null);
+                });
+                markers = [];
+
+                // For each place, get the icon, name and location.
+                var bounds = new google.maps.LatLngBounds();
+                places.forEach(place => {
+                    if (!place.geometry) {
+                        console.log("Returned place contains no geometry");
+                        return;
+                    }
+                    var icon = {
+                        url: place.icon,
+                        size: new google.maps.Size(71, 71),
+                        origin: new google.maps.Point(0, 0),
+                        anchor: new google.maps.Point(17, 34),
+                        scaledSize: new google.maps.Size(25, 25)
+                    };
+
+                    // Create a marker for each place.
+                    markers.push(new google.maps.Marker({
+                        map: map,
+                        icon: icon,
+                        title: place.name,
+                        position: place.geometry.location
+                    }));
+
+                    if (place.geometry.viewport) {
+                        // Only geocodes have viewport.
+                        bounds.union(place.geometry.viewport);
+                    } else {
+                        bounds.extend(place.geometry.location);
+                    }
+                });
+
+                if (places.length) {
+                    // use first (and only?) place to load images
+                    this.findAndShowImagesAsync(this.generateSearchQuery(places[0], null));
+                }
+
+                map.fitBounds(bounds);
             });
         }
 
@@ -84,23 +138,33 @@ namespace thdk.stockarto {
                 .then(imageResults => this.showImageSearchResults(imageResults));
         }
 
-        private generateSearchQuery(geocoderResults: google.maps.GeocoderResult[]): string {
-            const usefulTypeOrder: string[] = ["locality", "administrative_area_level_2"];
-            const ignoreTypes: string[] = new Array();
-            const usefulGeocoderResult: google.maps.GeocoderResult[] = new Array();
-            usefulTypeOrder.forEach(type => {
-                geocoderResults.forEach(result => {
-                    if (!utils.anyMatchInArray(result.types, ignoreTypes)) {
+        private generateSearchQuery(place: google.maps.places.PlaceResult, geocoderResults: google.maps.GeocoderResult[]): string {
+            let query = "";
 
-                        const match = utils.findFirst(result.types, t => t === type);
-                        if (match)
-                            usefulGeocoderResult.push(result);
-                    }
+            if (geocoderResults) {
+                const usefulTypeOrder: string[] = ["locality", "administrative_area_level_2"];
+                const ignoreTypes: string[] = new Array();
+                const usefulGeocoderResult: google.maps.GeocoderResult[] = new Array();
+                usefulTypeOrder.forEach(type => {
+                    geocoderResults.forEach(result => {
+                        if (!utils.anyMatchInArray(result.types, ignoreTypes)) {
+
+                            const match = utils.findFirst(result.types, t => t === type);
+                            if (match)
+                                usefulGeocoderResult.push(result);
+                        }
+                    });
                 });
-            });
 
-            const query = usefulGeocoderResult[0].address_components[0].short_name;
-            return query;
+                query = usefulGeocoderResult[0].address_components[0].short_name
+            }
+
+            // Todo: make addition of placename optional
+            // Todo: what else can be used of the place properties?
+            if (place && query.indexOf(" " + place.name) == -1)
+                query = place.name + " " + query;
+
+            return query.trim();
         }
 
         private getLocality(addresses: google.maps.GeocoderAddressComponent[]): string {
