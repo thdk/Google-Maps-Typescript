@@ -67,7 +67,7 @@ namespace thdk.stockarto {
                             this.geocoderResults = results;
                         }));
 
-                    $.when(...promises).then(() => {
+                    Promise.all(promises).then(() => {
                         let query = this.generateSearchQuery(this.geocoderResults);
                         if (this.place)
                             query = this.place.name + " " + query;

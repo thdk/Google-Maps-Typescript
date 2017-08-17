@@ -18,18 +18,16 @@ namespace thdk.maps.placesservice {
         }
 
         public getDetailsAsync(request: IPlaceDetailsRequest): Promise<IPlaceResult> {
-            const deferred = new Deferred<IPlaceResult>();
-
-            this.service.getDetails(request, (result, status) => {
-                if (status === google.maps.places.PlacesServiceStatus.OK) {
-                    deferred.resolve(result);
-                }
-                else {
-                    deferred.reject(status);
-                }
+            return new Promise<IPlaceResult>((resolve, reject) => {
+                this.service.getDetails(request, (result, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK) {
+                        resolve(result);
+                    }
+                    else {
+                        reject(status);
+                    }
+                });
             });
-
-            return deferred.promise;
         }
     }
 }
