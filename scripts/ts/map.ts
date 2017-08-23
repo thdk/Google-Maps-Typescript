@@ -68,5 +68,19 @@ namespace thdk.googlemaps {
                 zoom: 10
              });
         }
+
+        public addMarker(place: google.maps.places.PlaceResult, targetMap: google.maps.Map): google.maps.Marker {
+                var photos = place.photos;
+                if (!photos) {
+                  return;
+                }
+              
+               return new google.maps.Marker({
+                  map: targetMap,
+                  position: place.geometry.location,
+                  title: place.name,
+                  icon: photos[0].getUrl({'maxWidth': 200, 'maxHeight': 200})
+                });
+        }
     }
 }

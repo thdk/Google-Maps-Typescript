@@ -51,6 +51,7 @@ namespace thdk.stockarto {
 
                     const promises = new Array();
                     promises.push(geocodingService.geocodeAsync({ location: event.latLng }));
+                    promises.push(placesService.nearbySearchAsync({ location: event.latLng, radius: 30, type: "point_of_interest" }));
 
                     if (event.placeId) {
                         promises.push(placesService.getDetailsAsync({ placeId: event.placeId }));
@@ -58,9 +59,27 @@ namespace thdk.stockarto {
                     }
 
                     Promise.all(promises).then(responses => {
-                        let query = this.generateSearchQuery(responses.length > 1 ? responses[1] : null, responses[0]);
+                        let query = this.generateSearchQuery(responses.length > 2 ? responses[2] : null, responses[0]);
+                        const nearbyPlaces: maps.placesservice.IPlaceResult[] = responses[1];
+
+                        const ignoreTypes: string[] = ["restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar"];
+                        nearbyPlaces.forEach(element => {
+                            if (!utils.anyMatchInArray(element.types, ignoreTypes)) {
+                                // if types.lenght = 2 and one of them equals establishement, (the other one is POI) then skip this
+                                if (element.types.length !== 2 || element.types.indexOf("establishment") === -1) {
+                                    mapservice.addMarker(element, map);
+                                    element.types.forEach(t => {
+                                        console.log(element.name + ": " + t);
+                                    });
+                                }
+                            }
+                        });
+
                         this.findAndShowImagesAsync(query);
-                    });
+                    },
+                        (reason) => {
+                            console.log(reason);
+                        });
                 });
             });
         }
@@ -68,8 +87,10 @@ namespace thdk.stockarto {
         private initMapSearch(map: google.maps.Map) {
             // Create the search box and link it to the UI element.
             var input = <HTMLInputElement>document.getElementById('pac-input');
+            var inputWrapper = <HTMLInputElement>document.getElementById('pac-input-wrapper');
             var searchBox = new google.maps.places.SearchBox(input);
-            map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+            map.controls[google.maps.ControlPosition.TOP_LEFT].push(inputWrapper);
 
             // Bias the SearchBox results towards current map's viewport.
             map.addListener('bounds_changed', () => {
@@ -133,6 +154,9 @@ namespace thdk.stockarto {
         }
 
         private findAndShowImagesAsync(query): Promise<any> {
+            if (query === $("#query").val())
+                return;
+
             $("#query").val(query);
             return this.shutterstock.findAsync(query)
                 .then(imageResults => this.showImageSearchResults(imageResults));

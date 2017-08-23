@@ -1,14 +1,18 @@
 namespace thdk.maps.placesservice {
-    export interface IPlaceDetailsRequest extends google.maps.places.PlaceDetailsRequest {        
+    export interface IPlaceDetailsRequest extends google.maps.places.PlaceDetailsRequest {
     }
 
-    export interface IPlaceResult extends google.maps.places.PlaceResult {        
+    export interface IPlaceResult extends google.maps.places.PlaceResult {
     }
 
-    export interface IPlaceDetailsResponse {        
+    export interface IPlaceDetailsResponse {
         result: google.maps.places.PlaceResult;
         status: google.maps.places.PlacesServiceStatus;
     }
+
+    export type PriceLevel = 0 | 1 | 2 | 3 | 4;
+
+    export interface INearbySearchRequest extends google.maps.places.PlaceSearchRequest {}
 
     export class PlacesService {
         private service: google.maps.places.PlacesService;
@@ -24,7 +28,20 @@ namespace thdk.maps.placesservice {
                         resolve(result);
                     }
                     else {
-                        reject(status);
+                        reject("getDetails failed: " + status);
+                    }
+                });
+            });
+        }
+
+        public nearbySearchAsync(request: INearbySearchRequest): Promise<IPlaceResult[]> {
+            return new Promise<IPlaceResult[]>((resolve, reject) => {
+                this.service.nearbySearch(request, (results, status, pagination) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK) {
+                        resolve(results);
+                    }
+                    else {
+                        reject("nearbySearch failed: " + status);
                     }
                 });
             });
