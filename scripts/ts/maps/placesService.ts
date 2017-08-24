@@ -60,7 +60,8 @@ namespace thdk.maps.placesservice {
                 this.service.nearbySearch(request, (results, status, pagination) => {
                     if (status === google.maps.places.PlacesServiceStatus.OK || status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
                         nearbyResults = nearbyResults.concat(results);
-                        if (pagination.hasNextPage)
+                        // temporary disable pagination
+                        if (pagination.hasNextPage && true)
                             pagination.nextPage();
                         else {
                             resolve(nearbyResults);

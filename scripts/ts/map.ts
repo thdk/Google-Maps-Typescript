@@ -5,7 +5,12 @@ namespace thdk.googlemaps {
 
     export enum MarkerType {
         castle,
-        poi
+        poi,
+        church,
+        monument,
+        synagogue,
+        park,
+        museum
     }
 
     export class GoogleMapService {
@@ -29,6 +34,8 @@ namespace thdk.googlemaps {
             this.icons = {};
             this.icons["castle"] = iconBase + '1598-historic-building_4x.png';
             this.icons["poi"] = iconBase + '1611-japanese-poi_4x.png';
+            this.icons["museum"] = iconBase + '1636-museum_4x.png';
+            this.icons["church"] = iconBase + '1670-religious-christian_4x.png';
         }
 
         public loadApiAsync(): Promise<boolean> {
@@ -100,10 +107,9 @@ namespace thdk.googlemaps {
         }
 
         private getIconUrlForMarkerType(markerType: MarkerType, fallBack = MarkerType.poi): string {
-            let icon = this.icons[markerType.toString()];
+            let icon = this.icons[MarkerType[markerType]];
             if (!icon)
-                icon = this.icons[fallBack.toString()];
-
+                icon = this.icons[MarkerType[fallBack]];
             return icon;
         }
     }

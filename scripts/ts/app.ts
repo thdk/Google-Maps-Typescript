@@ -16,6 +16,8 @@ namespace thdk.stockarto {
 
     export class App {
         private shutterstock: stock.ShutterStock;
+        private mapservice: thdk.googlemaps.GoogleMapService;
+        private map: google.maps.Map;
 
         public start(): void {
             const network = new Network();
@@ -26,6 +28,7 @@ namespace thdk.stockarto {
             };
 
             this.shutterstock = new stock.ShutterStock(ssDeps);
+            this.mapservice = new googlemaps.GoogleMapService(config.google.applicationId);
 
             this.initMap();
             this.addHandlers();
@@ -40,19 +43,17 @@ namespace thdk.stockarto {
         }
 
         private initMap(): void {
-            const mapservice = new googlemaps.GoogleMapService(config.google.applicationId);
-            mapservice.loadApiAsync().then(success => {
-                const map = mapservice.getMap("sa-map");
-                const placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(map));
+            this.mapservice.loadApiAsync().then(success => {
+                this.map = this.mapservice.getMap("sa-map");
+                const placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(this.map));
                 const geocodingService = new maps.geocoding.GeocodingService(new google.maps.Geocoder());
 
-                this.initMapSearch(map);
-                google.maps.event.addListener(map, 'click', (event) => {
+                this.initMapSearch(this.map);
+                google.maps.event.addListener(this.map, 'click', (event) => {
 
+                    // get the current clicked place
                     const promises = new Array();
                     promises.push(geocodingService.geocodeAsync({ location: event.latLng }));
-                    // promises.push(placesService.textSearchAsync({query: "point of interest", location: event.latLng, radius: 3000}));
-                    promises.push(placesService.nearbySearchAsync({ location: event.latLng, keyword: "historical", rankBy: google.maps.places.RankBy.DISTANCE}));
 
                     if (event.placeId) {
                         promises.push(placesService.getDetailsAsync({ placeId: event.placeId }));
@@ -60,29 +61,55 @@ namespace thdk.stockarto {
                     }
 
                     Promise.all(promises).then(responses => {
-                        let query = this.generateSearchQuery(responses.length > 2 ? responses[2] : null, responses[0]);
-                        const nearbyPlaces: maps.placesservice.IPlaceResult[] = responses[1];
-                        console.log(nearbyPlaces);
-                        const ignoreTypes: string[] = ["restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar", "cafe", "food", "bank", "finance", "bus_station", "light_rail_station", "transit_station", "general_contractor", "car_repair", "hospital", "beauty_salon"];
-                        const pois = new Array();
-                        nearbyPlaces.forEach(place => {
-                            if (!utils.anyMatchInArray(place.types, ignoreTypes)) {
-                                pois.push(place);
-                            }
-                        });
-
-                        pois.forEach(poi => {
-                            mapservice.addMarker(poi, map);
-                            poi.types.forEach(t => {
-                                console.log(poi.name + ": " + t);
-                            });
-                        })
+                        let query = this.generateSearchQuery(responses.length > 1 ? responses[1] : null, responses[0]);
 
                         this.findAndShowImagesAsync(query);
                     },
                         (reason) => {
                             console.log(reason);
                         });
+
+
+                    // load nearby interesting places
+                    // promises.push(placesService.textSearchAsync({query: "point of interest", location: event.latLng, radius: 3000}));
+                    const radius = 3000;
+                    placesService.nearbySearchAsync({ location: event.latLng, keyword: "historical", rankBy: google.maps.places.RankBy.DISTANCE })
+                        .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
+
+                     placesService.nearbySearchAsync({ location: event.latLng, keyword: "bridge", rankBy: google.maps.places.RankBy.DISTANCE })
+                        .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
+
+                   // placesService.nearbySearchAsync({ location: event.latLng, type: "church", radius })
+                   // .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.church), (reason) => console.log(reason));
+
+                    placesService.nearbySearchAsync({ location: event.latLng, type: "synagogue", radius })
+                        .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.synagogue), (reason) => console.log(reason));
+
+                    placesService.nearbySearchAsync({ location: event.latLng, type: "museum", radius })
+                        .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.museum), (reason) => console.log(reason));
+
+                    placesService.nearbySearchAsync({ location: event.latLng, type: "park", radius })
+                        .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
+
+                });
+            });
+        }
+
+        private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[], markertype: googlemaps.MarkerType): void {
+            const ignoreTypes: string[] = ["art_gallery", "restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar", "cafe", "food", "bank", "finance", "bus_station", "light_rail_station", "transit_station", "general_contractor", "car_repair", "hospital", "beauty_salon"];
+            const pois: maps.placesservice.IPlaceResult[] = new Array();
+            places.forEach(place => {
+                if (!utils.anyMatchInArray(place.types, ignoreTypes)) {
+                    // TODO: configure minimum rating
+                    if (place.rating > 4)
+                        pois.push(place);
+                }
+            });
+
+            pois.forEach(poi => {
+                this.mapservice.addMarker(poi, this.map, markertype);
+                poi.types.forEach(t => {
+                    console.log(poi.name + ": " + t);
                 });
             });
         }
