@@ -51,7 +51,8 @@ namespace thdk.stockarto {
 
                     const promises = new Array();
                     promises.push(geocodingService.geocodeAsync({ location: event.latLng }));
-                    promises.push(placesService.nearbySearchAsync({ location: event.latLng, radius: 30, type: "point_of_interest" }));
+                    // promises.push(placesService.textSearchAsync({query: "point of interest", location: event.latLng, radius: 3000}));
+                    promises.push(placesService.nearbySearchAsync({ location: event.latLng, keyword: "historical", rankBy: google.maps.places.RankBy.DISTANCE}));
 
                     if (event.placeId) {
                         promises.push(placesService.getDetailsAsync({ placeId: event.placeId }));
@@ -61,19 +62,21 @@ namespace thdk.stockarto {
                     Promise.all(promises).then(responses => {
                         let query = this.generateSearchQuery(responses.length > 2 ? responses[2] : null, responses[0]);
                         const nearbyPlaces: maps.placesservice.IPlaceResult[] = responses[1];
-
-                        const ignoreTypes: string[] = ["restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar"];
-                        nearbyPlaces.forEach(element => {
-                            if (!utils.anyMatchInArray(element.types, ignoreTypes)) {
-                                // if types.lenght = 2 and one of them equals establishement, (the other one is POI) then skip this
-                                if (element.types.length !== 2 || element.types.indexOf("establishment") === -1) {
-                                    mapservice.addMarker(element, map);
-                                    element.types.forEach(t => {
-                                        console.log(element.name + ": " + t);
-                                    });
-                                }
+                        console.log(nearbyPlaces);
+                        const ignoreTypes: string[] = ["restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar", "cafe", "food", "bank", "finance", "bus_station", "light_rail_station", "transit_station", "general_contractor", "car_repair", "hospital", "beauty_salon"];
+                        const pois = new Array();
+                        nearbyPlaces.forEach(place => {
+                            if (!utils.anyMatchInArray(place.types, ignoreTypes)) {
+                                pois.push(place);
                             }
                         });
+
+                        pois.forEach(poi => {
+                            mapservice.addMarker(poi, map);
+                            poi.types.forEach(t => {
+                                console.log(poi.name + ": " + t);
+                            });
+                        })
 
                         this.findAndShowImagesAsync(query);
                     },
@@ -180,7 +183,8 @@ namespace thdk.stockarto {
                     });
                 });
 
-                query = usefulGeocoderResult[0].address_components[0].short_name
+                if (usefulGeocoderResult.length)
+                    query = usefulGeocoderResult[0].address_components[0].short_name
             }
 
             // Todo: make addition of placename optional
