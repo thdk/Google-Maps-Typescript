@@ -3,20 +3,32 @@ namespace thdk.googlemaps {
 
     }
 
-
+    export enum MarkerType {
+        castle,
+        poi
+    }
 
     export class GoogleMapService {
         private apiLoaderPromise: Promise<boolean>;
         private deferred: Deferred<boolean>;
         private apikey: string;
         private callbackname: string;
+        private icons: IStringKeyValue<string>;
 
         constructor(apiKey: string) {
             this.apikey = apiKey;
+            this.setIcons();
         }
 
         private resolve() {
             this.deferred.resolve(typeof google === 'object' && typeof google.maps === 'object' ? google.maps : false);
+        }
+
+        private setIcons() {
+            const iconBase = 'https://mt.google.com/vt/icon/name=icons/onion/SHARED-mymaps-container_4x.png,icons/onion/';
+            this.icons = {};
+            this.icons["castle"] = iconBase + '1598-historic-building_4x.png';
+            this.icons["poi"] = iconBase + '1611-japanese-poi_4x.png';
         }
 
         public loadApiAsync(): Promise<boolean> {
@@ -69,13 +81,13 @@ namespace thdk.googlemaps {
             });
         }
 
-        public addMarker(place: google.maps.places.PlaceResult, targetMap: google.maps.Map): google.maps.Marker {
-            var photos = place.photos;
-            if (!photos) {
+        public addMarker(place: google.maps.places.PlaceResult, targetMap: google.maps.Map, markerType: MarkerType, photo = false): google.maps.Marker {
+            if (!photo || !place.photos) {
                 return new google.maps.Marker({
                     map: targetMap,
                     position: place.geometry.location,
                     title: place.name,
+                    icon: this.getIconUrlForMarkerType(markerType)
                 });
             }
 
@@ -83,8 +95,16 @@ namespace thdk.googlemaps {
                 map: targetMap,
                 position: place.geometry.location,
                 title: place.name,
-                icon: photos[0].getUrl({ 'maxWidth': 200, 'maxHeight': 200 })
+                icon: place.photos[0].getUrl({ 'maxWidth': 150, 'maxHeight': 150 })
             });
+        }
+
+        private getIconUrlForMarkerType(markerType: MarkerType, fallBack = MarkerType.poi): string {
+            let icon = this.icons[markerType.toString()];
+            if (!icon)
+                icon = this.icons[fallBack.toString()];
+
+            return icon;
         }
     }
 }

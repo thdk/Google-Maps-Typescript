@@ -1,5 +1,8 @@
 namespace thdk{
-
+    export interface IStringKeyValue<T> {
+        [index: string]: T;
+    }
+    
     export interface IDeferred<T> {
         resolve(resolveWith: T): void;
         reject(rejectWith: T): void;
