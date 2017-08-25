@@ -16,6 +16,10 @@ namespace thdk.stockarto {
 
     export class App {
         private shutterstock: stock.ShutterStock;
+        private mapservice: thdk.googlemaps.GoogleMapService;
+        private map: google.maps.Map;
+        private placesService: maps.placesservice.PlacesService;
+        private geocodingService: maps.geocoding.GeocodingService;
 
         public start(): void {
             const network = new Network();
@@ -26,8 +30,12 @@ namespace thdk.stockarto {
             };
 
             this.shutterstock = new stock.ShutterStock(ssDeps);
+            this.mapservice = new googlemaps.GoogleMapService(config.google.applicationId);
 
-            this.initMap();
+            this.initMapAsync().then(() => {
+                this.placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(this.map));
+                this.geocodingService = new maps.geocoding.GeocodingService(new google.maps.Geocoder());
+            });
             this.addHandlers();
         }
 
@@ -39,48 +47,82 @@ namespace thdk.stockarto {
             });
         }
 
-        private initMap(): void {
-            const mapservice = new googlemaps.GoogleMapService(config.google.applicationId);
-            mapservice.loadApiAsync().then(success => {
-                const map = mapservice.getMap("sa-map");
-                const placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(map));
-                const geocodingService = new maps.geocoding.GeocodingService(new google.maps.Geocoder());
+        private initMapAsync(): Promise<void> {
+            return this.mapservice.loadApiAsync().then(success => {
+                this.map = this.mapservice.getMap("sa-map");
+                this.initMapSearch(this.map);
+                google.maps.event.addListener(this.map, 'click', (event) => this.handleMapClick(event));
+            });
+        }
 
-                this.initMapSearch(map);
-                google.maps.event.addListener(map, 'click', (event) => {
+        private handleMapClick(event) {
+            // get the current clicked place
+            const promises = new Array();
+            promises.push(this.geocodingService.geocodeAsync({ location: event.latLng }));
 
-                    const promises = new Array();
-                    promises.push(geocodingService.geocodeAsync({ location: event.latLng }));
-                    promises.push(placesService.nearbySearchAsync({ location: event.latLng, radius: 30, type: "point_of_interest" }));
+            if (event.placeId) {
+                promises.push(this.placesService.getDetailsAsync({ placeId: event.placeId }));
+                event.stop();
+            }
 
-                    if (event.placeId) {
-                        promises.push(placesService.getDetailsAsync({ placeId: event.placeId }));
-                        event.stop();
-                    }
-
-                    Promise.all(promises).then(responses => {
-                        let query = this.generateSearchQuery(responses.length > 2 ? responses[2] : null, responses[0]);
-                        const nearbyPlaces: maps.placesservice.IPlaceResult[] = responses[1];
-
-                        const ignoreTypes: string[] = ["restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar"];
-                        nearbyPlaces.forEach(element => {
-                            if (!utils.anyMatchInArray(element.types, ignoreTypes)) {
-                                // if types.lenght = 2 and one of them equals establishement, (the other one is POI) then skip this
-                                if (element.types.length !== 2 || element.types.indexOf("establishment") === -1) {
-                                    mapservice.addMarker(element, map);
-                                    element.types.forEach(t => {
-                                        console.log(element.name + ": " + t);
-                                    });
-                                }
-                            }
-                        });
-
-                        this.findAndShowImagesAsync(query);
-                    },
-                        (reason) => {
-                            console.log(reason);
-                        });
+            Promise.all(promises).then(responses => {
+                const query = this.generateSearchQuery(responses.length > 1 ? responses[1] : null, responses[0]);
+                this.findAndShowImagesAsync(query);
+            },
+                (reason) => {
+                    console.log(reason);
                 });
+
+            this.getNearbyPlacesAsync(event.latLng);
+        }
+
+        private getNearbyPlacesAsync(latLng: google.maps.LatLng) {
+            // promises.push(placesService.textSearchAsync({query: "point of interest", location: event.latLng, radius: 3000}));
+            const radius = 3000;
+            this.placesService.nearbySearchAsync({ location: latLng, keyword: "historical", rankBy: google.maps.places.RankBy.DISTANCE })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, keyword: "bridge", rankBy: google.maps.places.RankBy.DISTANCE })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, type: "church", radius })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.church), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, type: "synagogue", radius })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.synagogue), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, type: "museum", radius })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.museum), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, type: "park", radius })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, type: "monument", radius })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
+        }
+
+        private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[], markertype: googlemaps.MarkerType): void {
+            const ignoreTypes: string[] = ["art_gallery", "restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar", "cafe", "food", "bank", "finance", "bus_station", "light_rail_station", "transit_station", "general_contractor", "car_repair", "hospital", "beauty_salon"];
+            const pois: maps.placesservice.IPlaceResult[] = new Array();
+            places.forEach(place => {
+                if (!utils.anyMatchInArray(place.types, ignoreTypes)) {
+                    // TODO: configure minimum rating
+                    if (place.rating > 4)
+                        pois.push(place);
+                }
+            });
+
+            pois.forEach(poi => {
+                const marker = this.mapservice.addMarker(poi, this.map, markertype);
+                poi.types.forEach(t => {
+                    console.log(poi.name + ": " + t);
+                });
+
+                // infowindow                
+                google.maps.event.addListener(marker, 'click', (e) => {
+                    this.loadInfoWindowAsync(e.latLng, poi.place_id);
+                });
+
             });
         }
 
@@ -153,6 +195,28 @@ namespace thdk.stockarto {
             });
         }
 
+        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string) {
+            const infowindow = new google.maps.InfoWindow();
+            this.placesService.getDetailsAsync({ placeId }).then(poi => {
+                infowindow.setContent(this.getInfoWindowContentForPlace(poi));
+                infowindow.setPosition(latLng);
+                infowindow.open(this.map);
+            });
+        }
+
+        private getInfoWindowContentForPlace(place: maps.placesservice.IPlaceResult): string {
+            let content = '<div class="info-window">';
+            if (place.photos){
+                content += '<div class="iw-imageholder">';
+                content += '<img src="' + place.photos[0].getUrl({maxHeight: 350, maxWidth: 350}) + '"/>';
+                content += '</div>'
+            }
+            content += '<div class="iw-title">' + place.name + '</div>'
+            content += '</div>';
+
+            return content;
+        }
+
         private findAndShowImagesAsync(query): Promise<any> {
             if (query === $("#query").val())
                 return;
@@ -180,7 +244,8 @@ namespace thdk.stockarto {
                     });
                 });
 
-                query = usefulGeocoderResult[0].address_components[0].short_name
+                if (usefulGeocoderResult.length)
+                    query = usefulGeocoderResult[0].address_components[0].short_name
             }
 
             // Todo: make addition of placename optional
