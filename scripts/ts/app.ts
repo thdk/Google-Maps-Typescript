@@ -82,23 +82,23 @@ namespace thdk.stockarto {
             this.placesService.nearbySearchAsync({ location: latLng, keyword: "historical", rankBy: google.maps.places.RankBy.DISTANCE })
                 .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
 
-            this.placesService.nearbySearchAsync({ location: latLng, keyword: "bridge", rankBy: google.maps.places.RankBy.DISTANCE })
-                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
+            // this.placesService.nearbySearchAsync({ location: latLng, keyword: "bridge", rankBy: google.maps.places.RankBy.DISTANCE })
+            //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
 
-            this.placesService.nearbySearchAsync({ location: latLng, type: "church", radius })
-                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.church), (reason) => console.log(reason));
+            // this.placesService.nearbySearchAsync({ location: latLng, type: "church", radius })
+            //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.church), (reason) => console.log(reason));
 
-            this.placesService.nearbySearchAsync({ location: latLng, type: "synagogue", radius })
-                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.synagogue), (reason) => console.log(reason));
+            // this.placesService.nearbySearchAsync({ location: latLng, type: "synagogue", radius })
+            //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.synagogue), (reason) => console.log(reason));
 
-            this.placesService.nearbySearchAsync({ location: latLng, type: "museum", radius })
-                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.museum), (reason) => console.log(reason));
+            // this.placesService.nearbySearchAsync({ location: latLng, type: "museum", radius })
+            //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.museum), (reason) => console.log(reason));
 
             this.placesService.nearbySearchAsync({ location: latLng, type: "park", radius })
                 .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
 
-            this.placesService.nearbySearchAsync({ location: latLng, type: "monument", radius })
-                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
+            // this.placesService.nearbySearchAsync({ location: latLng, type: "monument", radius })
+            //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
         }
 
         private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[], markertype: googlemaps.MarkerType): void {
@@ -135,7 +135,8 @@ namespace thdk.stockarto {
             map.controls[google.maps.ControlPosition.TOP_LEFT].push(inputWrapper);
 
             // Bias the SearchBox results towards current map's viewport.
-            map.addListener('bounds_changed', () => {
+            map.addListener('bounds_changed', (e) => {
+                console.log(e);
                 searchBox.setBounds(map.getBounds());
             });
 
@@ -195,12 +196,11 @@ namespace thdk.stockarto {
             });
         }
 
-        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string) {
-            const infowindow = new google.maps.InfoWindow();
+        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string) {            
             this.placesService.getDetailsAsync({ placeId }).then(poi => {
-                infowindow.setContent(this.getInfoWindowContentForPlace(poi));
-                infowindow.setPosition(latLng);
-                infowindow.open(this.map);
+                this.mapservice.infowindow.setContent(this.getInfoWindowContentForPlace(poi));
+                this.mapservice.infowindow.open(this.map);
+                this.mapservice.infowindow.setPosition(latLng);
             });
         }
 

@@ -19,9 +19,10 @@ namespace thdk.googlemaps {
         private apikey: string;
         private callbackname: string;
         private icons: IStringKeyValue<string>;
+        public infowindow: google.maps.InfoWindow;
 
         constructor(apiKey: string) {
-            this.apikey = apiKey;
+            this.apikey = apiKey;            
             this.setIcons();
         }
 
@@ -61,6 +62,11 @@ namespace thdk.googlemaps {
 
             window[this.callbackname] = () => {
                 this.resolve();
+
+                // use a global infowindow to allow only one open infowindow at a time.
+                this.infowindow = new google.maps.InfoWindow();
+
+                // remove the api loaded callback function
                 setTimeout(function () {
                     try {
                         delete window[this.callbackName];
