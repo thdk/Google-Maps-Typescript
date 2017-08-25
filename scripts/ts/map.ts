@@ -36,6 +36,8 @@ namespace thdk.googlemaps {
             this.icons["poi"] = iconBase + '1611-japanese-poi_4x.png';
             this.icons["museum"] = iconBase + '1636-museum_4x.png';
             this.icons["church"] = iconBase + '1670-religious-christian_4x.png';
+            this.icons["park"] = iconBase + '1720-tree_4x.png';
+            this.icons["monument"] = iconBase + '1599-historic-monument_4x.png';
         }
 
         public loadApiAsync(): Promise<boolean> {

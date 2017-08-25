@@ -18,6 +18,8 @@ namespace thdk.stockarto {
         private shutterstock: stock.ShutterStock;
         private mapservice: thdk.googlemaps.GoogleMapService;
         private map: google.maps.Map;
+        private placesService: maps.placesservice.PlacesService;
+        private geocodingService: maps.geocoding.GeocodingService;
 
         public start(): void {
             const network = new Network();
@@ -30,7 +32,10 @@ namespace thdk.stockarto {
             this.shutterstock = new stock.ShutterStock(ssDeps);
             this.mapservice = new googlemaps.GoogleMapService(config.google.applicationId);
 
-            this.initMap();
+            this.initMapAsync().then(() => {
+                this.placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(this.map));
+                this.geocodingService = new maps.geocoding.GeocodingService(new google.maps.Geocoder());
+            });
             this.addHandlers();
         }
 
@@ -42,57 +47,58 @@ namespace thdk.stockarto {
             });
         }
 
-        private initMap(): void {
-            this.mapservice.loadApiAsync().then(success => {
+        private initMapAsync(): Promise<void> {
+            return this.mapservice.loadApiAsync().then(success => {
                 this.map = this.mapservice.getMap("sa-map");
-                const placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(this.map));
-                const geocodingService = new maps.geocoding.GeocodingService(new google.maps.Geocoder());
-
                 this.initMapSearch(this.map);
-                google.maps.event.addListener(this.map, 'click', (event) => {
-
-                    // get the current clicked place
-                    const promises = new Array();
-                    promises.push(geocodingService.geocodeAsync({ location: event.latLng }));
-
-                    if (event.placeId) {
-                        promises.push(placesService.getDetailsAsync({ placeId: event.placeId }));
-                        event.stop();
-                    }
-
-                    Promise.all(promises).then(responses => {
-                        let query = this.generateSearchQuery(responses.length > 1 ? responses[1] : null, responses[0]);
-
-                        this.findAndShowImagesAsync(query);
-                    },
-                        (reason) => {
-                            console.log(reason);
-                        });
-
-
-                    // load nearby interesting places
-                    // promises.push(placesService.textSearchAsync({query: "point of interest", location: event.latLng, radius: 3000}));
-                    const radius = 3000;
-                    placesService.nearbySearchAsync({ location: event.latLng, keyword: "historical", rankBy: google.maps.places.RankBy.DISTANCE })
-                        .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
-
-                     placesService.nearbySearchAsync({ location: event.latLng, keyword: "bridge", rankBy: google.maps.places.RankBy.DISTANCE })
-                        .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
-
-                   // placesService.nearbySearchAsync({ location: event.latLng, type: "church", radius })
-                   // .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.church), (reason) => console.log(reason));
-
-                    placesService.nearbySearchAsync({ location: event.latLng, type: "synagogue", radius })
-                        .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.synagogue), (reason) => console.log(reason));
-
-                    placesService.nearbySearchAsync({ location: event.latLng, type: "museum", radius })
-                        .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.museum), (reason) => console.log(reason));
-
-                    placesService.nearbySearchAsync({ location: event.latLng, type: "park", radius })
-                        .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
-
-                });
+                google.maps.event.addListener(this.map, 'click', (event) => this.handleMapClick(event));
             });
+        }
+
+        private handleMapClick(event) {
+            // get the current clicked place
+            const promises = new Array();
+            promises.push(this.geocodingService.geocodeAsync({ location: event.latLng }));
+
+            if (event.placeId) {
+                promises.push(this.placesService.getDetailsAsync({ placeId: event.placeId }));
+                event.stop();
+            }
+
+            Promise.all(promises).then(responses => {
+                const query = this.generateSearchQuery(responses.length > 1 ? responses[1] : null, responses[0]);
+                this.findAndShowImagesAsync(query);
+            },
+                (reason) => {
+                    console.log(reason);
+                });
+
+            this.getNearbyPlacesAsync(event.latLng);
+        }
+
+        private getNearbyPlacesAsync(latLng: google.maps.LatLng) {
+            // promises.push(placesService.textSearchAsync({query: "point of interest", location: event.latLng, radius: 3000}));
+            const radius = 3000;
+            this.placesService.nearbySearchAsync({ location: latLng, keyword: "historical", rankBy: google.maps.places.RankBy.DISTANCE })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, keyword: "bridge", rankBy: google.maps.places.RankBy.DISTANCE })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, type: "church", radius })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.church), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, type: "synagogue", radius })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.synagogue), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, type: "museum", radius })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.museum), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, type: "park", radius })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
+
+            this.placesService.nearbySearchAsync({ location: latLng, type: "monument", radius })
+                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
         }
 
         private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[], markertype: googlemaps.MarkerType): void {
@@ -107,10 +113,16 @@ namespace thdk.stockarto {
             });
 
             pois.forEach(poi => {
-                this.mapservice.addMarker(poi, this.map, markertype);
+                const marker = this.mapservice.addMarker(poi, this.map, markertype);
                 poi.types.forEach(t => {
                     console.log(poi.name + ": " + t);
                 });
+
+                // infowindow                
+                google.maps.event.addListener(marker, 'click', (e) => {
+                    this.loadInfoWindowAsync(e.latLng, poi.place_id);
+                });
+
             });
         }
 
@@ -181,6 +193,28 @@ namespace thdk.stockarto {
 
                 map.fitBounds(bounds);
             });
+        }
+
+        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string) {
+            const infowindow = new google.maps.InfoWindow();
+            this.placesService.getDetailsAsync({ placeId }).then(poi => {
+                infowindow.setContent(this.getInfoWindowContentForPlace(poi));
+                infowindow.setPosition(latLng);
+                infowindow.open(this.map);
+            });
+        }
+
+        private getInfoWindowContentForPlace(place: maps.placesservice.IPlaceResult): string {
+            let content = '<div class="info-window">';
+            if (place.photos){
+                content += '<div class="iw-imageholder">';
+                content += '<img src="' + place.photos[0].getUrl({maxHeight: 350, maxWidth: 350}) + '"/>';
+                content += '</div>'
+            }
+            content += '<div class="iw-title">' + place.name + '</div>'
+            content += '</div>';
+
+            return content;
         }
 
         private findAndShowImagesAsync(query): Promise<any> {
