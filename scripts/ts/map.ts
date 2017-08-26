@@ -10,7 +10,9 @@ namespace thdk.googlemaps {
         monument,
         synagogue,
         park,
-        museum
+        museum,
+        photo,
+        historical
     }
 
     export class GoogleMapService {
@@ -39,6 +41,8 @@ namespace thdk.googlemaps {
             this.icons["church"] = iconBase + '1670-religious-christian_4x.png';
             this.icons["park"] = iconBase + '1720-tree_4x.png';
             this.icons["monument"] = iconBase + '1599-historic-monument_4x.png';
+            this.icons["photo"] = iconBase + '1535-camera-photo_4x.png';
+            this.icons["historical"] = iconBase + '1598-historic-building_4x.png'; 
         }
 
         public loadApiAsync(): Promise<boolean> {

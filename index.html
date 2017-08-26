@@ -18,7 +18,26 @@
         <div id="pac-input-wrapper">
             <input id="pac-input" class="controls" type="text" placeholder="Search Box">
         </div>
-        <div class="actions-wrapper"></div>
+        <div id="actions-wrapper">
+            <ul class="actions">
+                <li class="search">
+                    <img src="images/poi-action.png" />
+                    <ul>
+                        <li><span class="park" data-type="park"></span></li>
+                        <li><span class="museum" data-type="museum"></span></li>
+                        <li><span class="church" data-type="church"></span></li>
+                        <li><span class="photo" data-type="" data-keyword="tourist attractions"></span></li>
+                        <li><span class="historical" data-type="" data-keyword="historical"></span></li>
+                        <li><span class="custom" data-type=""></span>
+                            <div class="custom-search-wrapper">
+                                <input type="text" class="custom-poi-search" />
+                                <input type="button" class="button" value="Search!"><span class="search-icon"></span>
+                            </div>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
         <div id="sa-map"></div>
     </div>
     <script type="text/javascript" src="scripts/ext/jquery-3.2.1.min.js"></script>

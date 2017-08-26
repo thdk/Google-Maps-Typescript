@@ -51,6 +51,7 @@ namespace thdk.stockarto {
             return this.mapservice.loadApiAsync().then(success => {
                 this.map = this.mapservice.getMap("sa-map");
                 this.initMapSearch(this.map);
+                this.initMapActions(this.map);
                 google.maps.event.addListener(this.map, 'click', (event) => this.handleMapClick(event));
             });
         }
@@ -72,8 +73,6 @@ namespace thdk.stockarto {
                 (reason) => {
                     console.log(reason);
                 });
-
-            this.getNearbyPlacesAsync(event.latLng);
         }
 
         private getNearbyPlacesAsync(latLng: google.maps.LatLng) {
@@ -101,13 +100,34 @@ namespace thdk.stockarto {
             //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
         }
 
+        private searchPoiAsync(type: string, keyword = "", useKeywordAsFallbackMarker = false) {
+            let marker = googlemaps.MarkerType[type];
+            if (!type && useKeywordAsFallbackMarker)
+                marker = this.getMarkerForKeyword(keyword);
+
+            this.placesService.nearbySearchAsync({ bounds: this.map.getBounds(), type: type, keyword })
+                .then(places => {
+                    console.log(marker);
+                    this.handleNearbyPlaces(places, marker), (reason) => console.log(reason)
+                });
+        }
+
+        private getMarkerForKeyword(keyword: string): googlemaps.MarkerType {
+            switch (keyword) {
+                case "tourist attractions":
+                    return googlemaps.MarkerType.photo;
+                default:
+                    return googlemaps.MarkerType[keyword];
+            }
+        }
+
         private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[], markertype: googlemaps.MarkerType): void {
             const ignoreTypes: string[] = ["art_gallery", "restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar", "cafe", "food", "bank", "finance", "bus_station", "light_rail_station", "transit_station", "general_contractor", "car_repair", "hospital", "beauty_salon"];
             const pois: maps.placesservice.IPlaceResult[] = new Array();
             places.forEach(place => {
                 if (!utils.anyMatchInArray(place.types, ignoreTypes)) {
                     // TODO: configure minimum rating
-                    if (place.rating > 4)
+                    if (place.rating > 3)
                         pois.push(place);
                 }
             });
@@ -123,6 +143,30 @@ namespace thdk.stockarto {
                     this.loadInfoWindowAsync(e.latLng, poi.place_id);
                 });
 
+            });
+        }
+
+        private initMapActions(map: google.maps.Map) {
+            // Create the search box and link it to the UI element.
+            const actionsWrapper = <HTMLInputElement>document.getElementById('actions-wrapper');
+            map.controls[google.maps.ControlPosition.LEFT_CENTER].push(actionsWrapper);
+            const $actionsWrapper = $(actionsWrapper);
+            $actionsWrapper.on("mouseenter", ".search", (e) => {
+                $(e.currentTarget).find("ul").show();
+            }).on("mouseleave", ".search", (e) => {
+                $(e.currentTarget).find("ul").hide();
+            });
+
+            $actionsWrapper.on("click", ".search span", (e) => {
+                const $span = $(e.currentTarget);
+                const type = $span.attr("data-type");
+                const keyword = $span.attr("data-keyword");
+                if (type || keyword) {
+                    this.searchPoiAsync(type, keyword, true);
+                } else {
+                    // show the search box
+                    $span.parent().find(".custom-search-wrapper").show();
+                }
             });
         }
 
@@ -196,7 +240,7 @@ namespace thdk.stockarto {
             });
         }
 
-        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string) {            
+        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string) {
             this.placesService.getDetailsAsync({ placeId }).then(poi => {
                 this.mapservice.infowindow.setContent(this.getInfoWindowContentForPlace(poi));
                 this.mapservice.infowindow.open(this.map);
@@ -206,9 +250,9 @@ namespace thdk.stockarto {
 
         private getInfoWindowContentForPlace(place: maps.placesservice.IPlaceResult): string {
             let content = '<div class="info-window">';
-            if (place.photos){
+            if (place.photos) {
                 content += '<div class="iw-imageholder">';
-                content += '<img src="' + place.photos[0].getUrl({maxHeight: 350, maxWidth: 350}) + '"/>';
+                content += '<img src="' + place.photos[0].getUrl({ maxHeight: 350, maxWidth: 350 }) + '"/>';
                 content += '</div>'
             }
             content += '<div class="iw-title">' + place.name + '</div>'

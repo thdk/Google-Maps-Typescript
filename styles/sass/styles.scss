@@ -46,6 +46,77 @@ $padding: 6px;
     }
   }
 
+  #actions-wrapper {
+    ul {
+      list-style: none;
+    }
+
+    ul.actions {
+      padding: 0;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+
+    li.search ul {
+      position: absolute;
+      left: 58px;
+      top: -37px;
+      padding: 0;
+      display: none;
+
+      span {
+        width: 36px;
+        height: 36px;
+        display: block;
+        background-repeat: no-repeat;
+        padding: 1px;  
+      }   
+
+      .custom-search-wrapper {
+        display: none;
+        position: relative;
+        top: -33px;
+        left: 40px;
+        width: 144px;
+
+        input.custom-poi-search {
+          float: left;
+          width: 53%; 
+          margin-right: 1%;       
+        }
+
+        input.button {
+          float: left;
+          width: 46%;
+        }
+      }
+
+      .park {
+        background-image: url("../../images/poi-park.png");
+      }
+
+      .museum {
+        background-image: url("../../images/poi-museum.png");
+      }
+
+      .photo {
+        background-image: url("../../images/poi-photo.png");
+      }
+
+      .church {
+        background-image: url("../../images/poi-church.png");
+      }
+
+      .historical {
+        background-image: url("../../images/poi-historical.png");
+      }
+
+      .custom {
+        background-image: url("../../images/poi-custom.png");
+      }
+    }
+  }
+
   #pac-input-wrapper {
     padding: 10px;
 
