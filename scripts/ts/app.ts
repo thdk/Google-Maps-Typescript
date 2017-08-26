@@ -168,6 +168,11 @@ namespace thdk.stockarto {
                     $span.parent().find(".custom-search-wrapper").show();
                 }
             });
+
+            $actionsWrapper.on("click", ".search-icon", (e) => {
+                const $span = $(e.currentTarget);
+                this.searchPoiAsync(null, $span.prev().val());
+            })
         }
 
         private initMapSearch(map: google.maps.Map) {
