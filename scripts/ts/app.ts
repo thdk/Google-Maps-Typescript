@@ -16,7 +16,7 @@ namespace thdk.stockarto {
 
     export class App {
         private shutterstock: stock.ShutterStock;
-        private mapservice: thdk.googlemaps.GoogleMapService;
+        private mapservice: thdk.maps.GoogleMapService;
         private map: google.maps.Map;
         private placesService: maps.placesservice.PlacesService;
         private geocodingService: maps.geocoding.GeocodingService;
@@ -30,7 +30,7 @@ namespace thdk.stockarto {
             };
 
             this.shutterstock = new stock.ShutterStock(ssDeps);
-            this.mapservice = new googlemaps.GoogleMapService(config.google.applicationId);
+            this.mapservice = new maps.GoogleMapService(config.google.applicationId);
 
             this.initMapAsync().then(() => {
                 this.placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(this.map));
@@ -79,7 +79,7 @@ namespace thdk.stockarto {
             // promises.push(placesService.textSearchAsync({query: "point of interest", location: event.latLng, radius: 3000}));
             const radius = 3000;
             this.placesService.nearbySearchAsync({ location: latLng, keyword: "historical", rankBy: google.maps.places.RankBy.DISTANCE })
-                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
+                .then(places => this.handleNearbyPlaces(places, maps.MarkerType.castle), (reason) => console.log(reason));
 
             // this.placesService.nearbySearchAsync({ location: latLng, keyword: "bridge", rankBy: google.maps.places.RankBy.DISTANCE })
             //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
@@ -94,34 +94,31 @@ namespace thdk.stockarto {
             //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.museum), (reason) => console.log(reason));
 
             this.placesService.nearbySearchAsync({ location: latLng, type: "park", radius })
-                .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
+                .then(places => this.handleNearbyPlaces(places, maps.MarkerType.park), (reason) => console.log(reason));
 
             // this.placesService.nearbySearchAsync({ location: latLng, type: "monument", radius })
             //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
         }
 
         private searchPoiAsync(type: string, keyword = "", useKeywordAsFallbackMarker = false) {
-            let marker = googlemaps.MarkerType[type];
+            let marker = maps.MarkerType[type];
             if (!type && useKeywordAsFallbackMarker)
                 marker = this.getMarkerForKeyword(keyword);
 
             this.placesService.nearbySearchAsync({ bounds: this.map.getBounds(), type: type, keyword })
-                .then(places => {
-                    console.log(marker);
-                    this.handleNearbyPlaces(places, marker), (reason) => console.log(reason)
-                });
+                .then(places => this.handleNearbyPlaces(places, marker), reason => console.log(reason));
         }
 
-        private getMarkerForKeyword(keyword: string): googlemaps.MarkerType {
+        private getMarkerForKeyword(keyword: string): maps.MarkerType {
             switch (keyword) {
                 case "tourist attractions":
-                    return googlemaps.MarkerType.photo;
+                    return maps.MarkerType.photo;
                 default:
-                    return googlemaps.MarkerType[keyword];
+                    return maps.MarkerType[keyword];
             }
         }
 
-        private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[], markertype: googlemaps.MarkerType): void {
+        private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[], markertype: maps.MarkerType): void {
             const ignoreTypes: string[] = ["art_gallery", "restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar", "cafe", "food", "bank", "finance", "bus_station", "light_rail_station", "transit_station", "general_contractor", "car_repair", "hospital", "beauty_salon"];
             const pois: maps.placesservice.IPlaceResult[] = new Array();
             places.forEach(place => {
@@ -134,15 +131,7 @@ namespace thdk.stockarto {
 
             pois.forEach(poi => {
                 const marker = this.mapservice.addMarker(poi, this.map, markertype);
-                poi.types.forEach(t => {
-                    console.log(poi.name + ": " + t);
-                });
-
-                // infowindow                
-                google.maps.event.addListener(marker, 'click', (e) => {
-                    this.loadInfoWindowAsync(e.latLng, poi.place_id);
-                });
-
+                google.maps.event.addListener(marker, 'click', (e) => this.loadInfoWindowAsync(e.latLng, poi.place_id));
             });
         }
 

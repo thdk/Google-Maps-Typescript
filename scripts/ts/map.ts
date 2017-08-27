@@ -1,10 +1,10 @@
-namespace thdk.googlemaps {
+namespace thdk.maps {
     export interface IMap {
 
     }
 
     export enum MarkerType {
-        castle,
+        castle = 0,
         poi,
         church,
         monument,
@@ -20,29 +20,16 @@ namespace thdk.googlemaps {
         private deferred: Deferred<boolean>;
         private apikey: string;
         private callbackname: string;
-        private icons: IStringKeyValue<string>;
+        private icons: string[];
         public infowindow: google.maps.InfoWindow;
 
         constructor(apiKey: string) {
-            this.apikey = apiKey;            
+            this.apikey = apiKey;
             this.setIcons();
         }
 
         private resolve() {
             this.deferred.resolve(typeof google === 'object' && typeof google.maps === 'object' ? google.maps : false);
-        }
-
-        private setIcons() {
-            const iconBase = 'https://mt.google.com/vt/icon/name=icons/onion/SHARED-mymaps-container_4x.png,icons/onion/';
-            this.icons = {};
-            this.icons["castle"] = iconBase + '1598-historic-building_4x.png';
-            this.icons["poi"] = iconBase + '1611-japanese-poi_4x.png';
-            this.icons["museum"] = iconBase + '1636-museum_4x.png';
-            this.icons["church"] = iconBase + '1670-religious-christian_4x.png';
-            this.icons["park"] = iconBase + '1720-tree_4x.png';
-            this.icons["monument"] = iconBase + '1599-historic-monument_4x.png';
-            this.icons["photo"] = iconBase + '1535-camera-photo_4x.png';
-            this.icons["historical"] = iconBase + '1598-historic-building_4x.png'; 
         }
 
         public loadApiAsync(): Promise<boolean> {
@@ -96,32 +83,36 @@ namespace thdk.googlemaps {
         public getMap(id: string): google.maps.Map {
             return new google.maps.Map(document.getElementById(id), {
                 center: { lat: 51.055605, lng: 3.711732 },
-                zoom: 10
+                zoom: 12
             });
         }
 
-        public addMarker(place: google.maps.places.PlaceResult, targetMap: google.maps.Map, markerType: MarkerType, photo = false): google.maps.Marker {
-            if (!photo || !place.photos) {
-                return new google.maps.Marker({
-                    map: targetMap,
-                    position: place.geometry.location,
-                    title: place.name,
-                    icon: this.getIconUrlForMarkerType(markerType)
-                });
-            }
-
+        public addMarker(place: google.maps.places.PlaceResult, targetMap: google.maps.Map, markerType: MarkerType): google.maps.Marker {
             return new google.maps.Marker({
                 map: targetMap,
                 position: place.geometry.location,
                 title: place.name,
-                icon: place.photos[0].getUrl({ 'maxWidth': 150, 'maxHeight': 150 })
+                icon: this.getIconUrlForMarkerType(markerType)
             });
         }
 
+        private setIcons() {
+            const iconBase = 'https://mt.google.com/vt/icon/name=icons/onion/SHARED-mymaps-container_4x.png,icons/onion/';
+            this.icons = new Array();
+            this.icons[MarkerType.castle] = iconBase + '1598-historic-building_4x.png';
+            this.icons[MarkerType.poi] = iconBase + '1611-japanese-poi_4x.png';
+            this.icons[MarkerType.museum] = iconBase + '1636-museum_4x.png';
+            this.icons[MarkerType.church] = iconBase + '1670-religious-christian_4x.png';
+            this.icons[MarkerType.park] = iconBase + '1720-tree_4x.png';
+            this.icons[MarkerType.monument] = iconBase + '1599-historic-monument_4x.png';
+            this.icons[MarkerType.photo] = iconBase + '1535-camera-photo_4x.png';
+            this.icons[MarkerType.historical] = iconBase + '1598-historic-building_4x.png';
+        }
+
         private getIconUrlForMarkerType(markerType: MarkerType, fallBack = MarkerType.poi): string {
-            let icon = this.icons[MarkerType[markerType]];
+            let icon = this.icons[markerType];
             if (!icon)
-                icon = this.icons[MarkerType[fallBack]];
+                icon = this.icons[fallBack];
             return icon;
         }
     }
