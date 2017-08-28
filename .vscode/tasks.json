@@ -22,6 +22,16 @@
             "problemMatcher": [
                 "$eslint-stylish"
             ]
+        },
+        {
+            "taskName": "Build all",
+            "type": "shell",
+            "command": ".\\buildall",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
         }
     ]
 }
