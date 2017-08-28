@@ -20,6 +20,7 @@ namespace thdk.stockarto {
         private map: google.maps.Map;
         private placesService: maps.placesservice.PlacesService;
         private geocodingService: maps.geocoding.GeocodingService;
+        private poiSearchMachines: maps.IPoiSearch[];
 
         public start(): void {
             const network = new Network();
@@ -32,11 +33,26 @@ namespace thdk.stockarto {
             this.shutterstock = new stock.ShutterStock(ssDeps);
             this.mapservice = new maps.GoogleMapService(config.google.applicationId);
 
-            this.initMapAsync().then(() => {
+            this.mapservice.loadApiAsync().then(() => {
+                this.map = this.mapservice.getMap("sa-map");
                 this.placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(this.map));
                 this.geocodingService = new maps.geocoding.GeocodingService(new google.maps.Geocoder());
+
+                this.initMapSearch(this.map);
+
+                const poiSearchDeps: maps.IPoiSearchDepenencies = {
+                    map: this.map,
+                    mapService: this.mapservice,
+                    placesService: this.placesService
+                };
+
+                this.poiSearchMachines = new Array();
+                this.poiSearchMachines.push(new maps.TypePoiSearch(poiSearchDeps, "church", { markerColor: "77450b", markerType: maps.MarkerType.church }));
+                this.poiSearchMachines.push(new maps.TypePoiSearch(poiSearchDeps, "museum", { markerColor: "4576cc", markerType: maps.MarkerType.museum }));
+                this.poiSearchMachines.push(new maps.TypePoiSearch(poiSearchDeps, "park", { markerColor: "529946", markerType: maps.MarkerType.park }));
+                this.initMapActions(this.map);
+                this.addHandlers();
             });
-            this.addHandlers();
         }
 
         private addHandlers(): void {
@@ -45,15 +61,8 @@ namespace thdk.stockarto {
                 this.findImagesAsync()
                     .then(results => this.showImageSearchResults(results));
             });
-        }
 
-        private initMapAsync(): Promise<void> {
-            return this.mapservice.loadApiAsync().then(success => {
-                this.map = this.mapservice.getMap("sa-map");
-                this.initMapSearch(this.map);
-                this.initMapActions(this.map);
-                google.maps.event.addListener(this.map, 'click', (event) => this.handleMapClick(event));
-            });
+            google.maps.event.addListener(this.map, 'click', (event) => this.handleMapClick(event));
         }
 
         private handleMapClick(event) {
@@ -75,37 +84,12 @@ namespace thdk.stockarto {
                 });
         }
 
-        private getNearbyPlacesAsync(latLng: google.maps.LatLng) {
-            // promises.push(placesService.textSearchAsync({query: "point of interest", location: event.latLng, radius: 3000}));
-            const radius = 3000;
-            this.placesService.nearbySearchAsync({ location: latLng, keyword: "historical", rankBy: google.maps.places.RankBy.DISTANCE })
-                .then(places => this.handleNearbyPlaces(places, maps.MarkerType.castle), (reason) => console.log(reason));
-
-            // this.placesService.nearbySearchAsync({ location: latLng, keyword: "bridge", rankBy: google.maps.places.RankBy.DISTANCE })
-            //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.castle), (reason) => console.log(reason));
-
-            // this.placesService.nearbySearchAsync({ location: latLng, type: "church", radius })
-            //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.church), (reason) => console.log(reason));
-
-            // this.placesService.nearbySearchAsync({ location: latLng, type: "synagogue", radius })
-            //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.synagogue), (reason) => console.log(reason));
-
-            // this.placesService.nearbySearchAsync({ location: latLng, type: "museum", radius })
-            //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.museum), (reason) => console.log(reason));
-
-            this.placesService.nearbySearchAsync({ location: latLng, type: "park", radius })
-                .then(places => this.handleNearbyPlaces(places, maps.MarkerType.park), (reason) => console.log(reason));
-
-            // this.placesService.nearbySearchAsync({ location: latLng, type: "monument", radius })
-            //     .then(places => this.handleNearbyPlaces(places, googlemaps.MarkerType.park), (reason) => console.log(reason));
-        }
-
         private searchPoiAsync(type: string, keyword = "", useKeywordAsFallbackMarker = false) {
             let marker = maps.MarkerType[type];
             if (!type && useKeywordAsFallbackMarker)
                 marker = this.getMarkerForKeyword(keyword);
-            
-            const poiSearch = new maps.TypePoiSearch({placesService: this.placesService, mapService: this.mapservice, map: this.map}, type, marker);
+
+            const poiSearch = new maps.TypePoiSearch({ placesService: this.placesService, mapService: this.mapservice, map: this.map }, type, marker);
             poiSearch.searchAsync().then(places => poiSearch.markers.forEach(m => m.setIcon(m.getIcon() + "?highlight=00FF00")));
 
             // this.placesService.nearbySearchAsync({ bounds: this.map.getBounds(), type: type, keyword })
@@ -121,23 +105,6 @@ namespace thdk.stockarto {
             }
         }
 
-        private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[], markertype: maps.MarkerType): void {
-            const ignoreTypes: string[] = ["art_gallery", "restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar", "cafe", "food", "bank", "finance", "bus_station", "light_rail_station", "transit_station", "general_contractor", "car_repair", "hospital", "beauty_salon"];
-            const pois: maps.placesservice.IPlaceResult[] = new Array();
-            places.forEach(place => {
-                if (!utils.anyMatchInArray(place.types, ignoreTypes)) {
-                    // TODO: configure minimum rating
-                    if (place.rating > 3)
-                        pois.push(place);
-                }
-            });
-
-            pois.forEach(poi => {
-                const marker = this.mapservice.addMarker(poi, this.map, markertype);
-                google.maps.event.addListener(marker, 'click', (e) => this.loadInfoWindowAsync(e.latLng, poi.place_id));
-            });
-        }
-
         private initMapActions(map: google.maps.Map) {
             // Create the search box and link it to the UI element.
             const actionsWrapper = <HTMLInputElement>document.getElementById('actions-wrapper');
@@ -149,16 +116,20 @@ namespace thdk.stockarto {
                 $(e.currentTarget).find("ul").hide();
             });
 
-            $actionsWrapper.on("click", ".search span", (e) => {
-                const $span = $(e.currentTarget);
-                const type = $span.attr("data-type");
-                const keyword = $span.attr("data-keyword");
-                if (type || keyword) {
-                    this.searchPoiAsync(type, keyword, true);
-                } else {
-                    // show the search box
-                    $span.parent().find(".custom-search-wrapper").show();
-                }
+            const $searchActionsList = $actionsWrapper.find(".poi-search-list");
+            this.poiSearchMachines.forEach(sm => {
+                const $listItem = $(`<li><span class="${sm.type}"></span></li>`);
+                $listItem.on("click", "span", (e) => {
+                    const $span = $(e.currentTarget);
+                    const keyword = $span.attr("data-keyword");
+                    if (sm.type || keyword) {
+                        sm.searchAsync();
+                    } else {
+                        // show the search box
+                        $span.parent().find(".custom-search-wrapper").show();
+                    }
+                });
+                $searchActionsList.append($listItem);
             });
 
             $actionsWrapper.on("click", ".search-icon", (e) => {

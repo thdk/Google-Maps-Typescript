@@ -5,7 +5,13 @@ namespace thdk.maps {
         map: google.maps.Map;
     }
 
+    export interface IPoiSearchOptions {
+        markerType: MarkerType;
+        markerColor?: string;
+    }
+
     export interface IPoiSearch {
+        type: string;
         searchAsync(): Promise<void | placesservice.IPlaceResult[]>;
     }
 
@@ -16,18 +22,19 @@ namespace thdk.maps {
         private mapService: GoogleMapService;
         private keyword: string;
         private results: placesservice.IPlaceResult[];
-        private markerType: MarkerType;
+        private options: IPoiSearchOptions;
 
         public type: string;
         public map: google.maps.Map;
 
         public markers: google.maps.Marker[];
 
-        constructor(deps: IPoiSearchDepenencies, markerType: MarkerType, type = "", keyword = "") {
+        constructor(deps: IPoiSearchDepenencies, options: IPoiSearchOptions, type = "", keyword = "") {
             this.placesService = deps.placesService;
             this.mapService = deps.mapService;
             this.map = deps.map;
-            this.markerType = markerType;
+            this.options = options;
+            this.type = type;
         }
 
         public searchAsync(): Promise<void | placesservice.IPlaceResult[]> {
@@ -52,13 +59,13 @@ namespace thdk.maps {
         }
 
         private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[]): void {
-            this.markers = places.map(place => this.mapService.addMarker(place, this.map, this.markerType));
+            this.markers = places.map(place => this.mapService.addMarker(place, this.map, this.options));
         }
     }
 
     export class TypePoiSearch extends PoiSearch {
-        constructor(deps: IPoiSearchDepenencies, type: string, markerType: MarkerType) {
-            super(deps, markerType, "", type);
+        constructor(deps: IPoiSearchDepenencies, type: string, options: IPoiSearchOptions) {
+            super(deps, options, type, "");
         }
     }
 }

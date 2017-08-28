@@ -3,6 +3,11 @@ namespace thdk.maps {
 
     }
 
+    export interface IMarkerOptions {
+        markerColor?: string;
+        markerType: MarkerType;
+    }
+
     export enum MarkerType {
         castle = 0,
         poi,
@@ -87,12 +92,12 @@ namespace thdk.maps {
             });
         }
 
-        public addMarker(place: google.maps.places.PlaceResult, targetMap: google.maps.Map, markerType: MarkerType): google.maps.Marker {
+        public addMarker(place: google.maps.places.PlaceResult, targetMap: google.maps.Map, options: IMarkerOptions): google.maps.Marker {
             return new google.maps.Marker({
                 map: targetMap,
                 position: place.geometry.location,
                 title: place.name,
-                icon: this.getIconUrlForMarkerType(markerType)
+                icon: this.getIconUrlForMarkerType(options)
             });
         }
 
@@ -109,10 +114,14 @@ namespace thdk.maps {
             this.icons[MarkerType.historical] = iconBase + '1598-historic-building_4x.png';
         }
 
-        private getIconUrlForMarkerType(markerType: MarkerType, fallBack = MarkerType.poi): string {
-            let icon = this.icons[markerType];
+        private getIconUrlForMarkerType(options: IMarkerOptions, fallBack = MarkerType.poi): string {
+            let icon = this.icons[options.markerType];
             if (!icon)
                 icon = this.icons[fallBack];
+
+            if (options.markerColor)
+                icon += "?highlight=" + options.markerColor;
+
             return icon;
         }
     }
