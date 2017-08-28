@@ -106,7 +106,7 @@ namespace thdk.stockarto {
                 marker = this.getMarkerForKeyword(keyword);
             
             const poiSearch = new maps.TypePoiSearch({placesService: this.placesService, mapService: this.mapservice, map: this.map}, type, marker);
-            poiSearch.searchAsync().then(places => poiSearch.markers.forEach(m => m.setDraggable(true)));
+            poiSearch.searchAsync().then(places => poiSearch.markers.forEach(m => m.setIcon(m.getIcon() + "?highlight=00FF00")));
 
             // this.placesService.nearbySearchAsync({ bounds: this.map.getBounds(), type: type, keyword })
             //     .then(places => this.handleNearbyPlaces(places, marker), reason => console.log(reason));
