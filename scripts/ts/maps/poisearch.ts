@@ -1,44 +1,64 @@
 namespace thdk.maps {
-export interface IPoiDepenencies {
-    placesService: placesservice.PlacesService;
-    icons: 
-}
+    export interface IPoiSearchDepenencies {
+        placesService: placesservice.PlacesService;
+        mapService: GoogleMapService;
+        map: google.maps.Map;
+    }
 
     export interface IPoiSearch {
-        searchAsync(bounds: google.maps.Map): Promise<placesservice.IPlaceResult[]>;
+        searchAsync(): Promise<void | placesservice.IPlaceResult[]>;
     }
 
     export class PoiSearch implements IPoiSearch {
-        private markers: google.maps.Marker[];
+
         private resultsMap: string[];
         private placesService: placesservice.PlacesService;
+        private mapService: GoogleMapService;
         private keyword: string;
         private results: placesservice.IPlaceResult[];
+        private markerType: MarkerType;
 
         public type: string;
+        public map: google.maps.Map;
 
-        constructor(placesservice: placesservice.PlacesService, type = "", keyword = "") {
-            this.placesService = placesservice;
+        public markers: google.maps.Marker[];
+
+        constructor(deps: IPoiSearchDepenencies, markerType: MarkerType, type = "", keyword = "") {
+            this.placesService = deps.placesService;
+            this.mapService = deps.mapService;
+            this.map = deps.map;
+            this.markerType = markerType;
         }
 
-        public searchAsync(map: google.maps.Map): Promise<placesservice.IPlaceResult[]> {
+        public searchAsync(): Promise<void | placesservice.IPlaceResult[]> {
             if (!this.resultsMap)
                 this.resultsMap = new Array();
 
             if (!this.results)
                 this.results = new Array();
 
-            return this.placesService.nearbySearchAsync({ bounds: map.getBounds(), keyword: this.keyword, type: this.type }).then(results => {
-                const newResults = results.filter(r => this.resultsMap.indexOf(r.place_id) == -1);
-                this.results = this.results.concat(newResults);
-                return newResults;
-            });
+            return this.placesService.nearbySearchAsync({ bounds: this.map.getBounds(), keyword: this.keyword, type: this.type })
+                .then(results => {
+                    const newResults = results.filter(r => this.resultsMap.indexOf(r.place_id) == -1);
+                    this.results = this.results.concat(newResults);
+                    // todo: filter newResults
+
+                    this.handleNearbyPlaces(newResults);
+                    return newResults;
+                },
+                reason => {
+                    console.log(reason);
+                });
+        }
+
+        private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[]): void {
+            this.markers = places.map(place => this.mapService.addMarker(place, this.map, this.markerType));
         }
     }
 
     export class TypePoiSearch extends PoiSearch {
-        constructor(placesservice: placesservice.PlacesService, type: string) {
-            super(placesservice, "", type);
+        constructor(deps: IPoiSearchDepenencies, type: string, markerType: MarkerType) {
+            super(deps, markerType, "", type);
         }
     }
 }

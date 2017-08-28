@@ -104,9 +104,12 @@ namespace thdk.stockarto {
             let marker = maps.MarkerType[type];
             if (!type && useKeywordAsFallbackMarker)
                 marker = this.getMarkerForKeyword(keyword);
+            
+            const poiSearch = new maps.TypePoiSearch({placesService: this.placesService, mapService: this.mapservice, map: this.map}, type, marker);
+            poiSearch.searchAsync().then(places => poiSearch.markers.forEach(m => m.setDraggable(true)));
 
-            this.placesService.nearbySearchAsync({ bounds: this.map.getBounds(), type: type, keyword })
-                .then(places => this.handleNearbyPlaces(places, marker), reason => console.log(reason));
+            // this.placesService.nearbySearchAsync({ bounds: this.map.getBounds(), type: type, keyword })
+            //     .then(places => this.handleNearbyPlaces(places, marker), reason => console.log(reason));
         }
 
         private getMarkerForKeyword(keyword: string): maps.MarkerType {
