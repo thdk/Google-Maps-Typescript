@@ -77,7 +77,10 @@ namespace thdk.stockarto {
 
             Promise.all(promises).then(responses => {
                 const query = this.generateSearchQuery(responses.length > 1 ? responses[1] : null, responses[0]);
-                this.findAndShowImagesAsync(query);
+
+                const oldQuery = $("#query").val()
+                if(oldQuery != query)
+                    this.findAndShowImagesAsync(query);
             },
                 (reason) => {
                     console.log(reason);
@@ -134,7 +137,7 @@ namespace thdk.stockarto {
 
             $actionsWrapper.on("click", ".search-icon", (e) => {
                 const $span = $(e.currentTarget);
-                this.searchPoiAsync(null, $span.prev().val());
+                this.searchPoiAsync("", $span.prev().val());
             })
         }
 
@@ -148,11 +151,16 @@ namespace thdk.stockarto {
 
             // Bias the SearchBox results towards current map's viewport.
             map.addListener('bounds_changed', (e) => {
-                console.log(e);
-                searchBox.setBounds(map.getBounds());
+                const bounds = map.getBounds();
+                if (bounds)
+                    searchBox.setBounds(bounds);
+                else {
+                    // if this never happens use searchBox.setBounds(bounds!);
+                    alert("GOOGLE MAPS RETURNED " + bounds + " for map.getBounds.")
+                }
             });
 
-            var markers = [];
+            let markers: google.maps.Marker[] = [];
             // Listen for the event fired when the user selects a prediction and retrieve
             // more details for that place.
             searchBox.addListener('places_changed', () => {
@@ -230,15 +238,12 @@ namespace thdk.stockarto {
         }
 
         private findAndShowImagesAsync(query): Promise<any> {
-            if (query === $("#query").val())
-                return;
-
             $("#query").val(query);
             return this.shutterstock.findAsync(query)
                 .then(imageResults => this.showImageSearchResults(imageResults));
         }
 
-        private generateSearchQuery(place: google.maps.places.PlaceResult, geocoderResults: google.maps.GeocoderResult[]): string {
+        private generateSearchQuery(place: google.maps.places.PlaceResult, geocoderResults: google.maps.GeocoderResult[] | Falsy): string {
             let query = "";
 
             if (geocoderResults) {
@@ -279,17 +284,19 @@ namespace thdk.stockarto {
         }
 
         private showImageSearchResults(results: shutterstock.ImageSearchResults) {
-            if (!results.data.length)
+            if (!results.data)
                 return;
 
             const $container = $("#imagecontainer");
             $container.empty();
 
             results.data.forEach(imgData => {
-                const imagedata = imgData.assets.preview;
-                var img = document.createElement('img');
-                img.setAttribute("src", imagedata.url);
-                $container.append(img);
+                if (imgData.assets && imgData.assets.preview !== undefined) {
+                    const imagedata = imgData.assets.preview;
+                    var img = document.createElement('img');
+                    img.setAttribute("src", imagedata.url);
+                    $container.append(img);
+                }
             });
 
         }

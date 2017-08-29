@@ -44,7 +44,7 @@ namespace thdk.maps {
             if (!this.results)
                 this.results = new Array();
 
-            return this.placesService.nearbySearchAsync({ bounds: this.map.getBounds(), keyword: this.keyword, type: this.type })
+            return this.placesService.nearbySearchAsync({ bounds: this.map.getBounds()!, keyword: this.keyword, type: this.type })
                 .then(results => {
                     const newResults = results.filter(r => this.resultsMap.indexOf(r.place_id) == -1);
                     this.results = this.results.concat(newResults);
