@@ -114,13 +114,15 @@ namespace thdk.maps {
             this.icons[MarkerType.historical] = iconBase + '1598-historic-building_4x.png';
         }
 
-        private getIconUrlForMarkerType(options: IMarkerOptions, fallBack = MarkerType.poi): string {
+        public getIconUrlForMarkerType(options: IMarkerOptions, scale: number = 1, fallBack = MarkerType.poi): string {
             let icon = this.icons[options.markerType];
             if (!icon)
                 icon = this.icons[fallBack];
 
+            icon += "?scale=" + scale.toString();
+
             if (options.markerColor)
-                icon += "?highlight=" + options.markerColor;
+                icon += "&highlight=" + options.markerColor;
 
             return icon;
         }

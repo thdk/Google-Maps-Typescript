@@ -14,15 +14,21 @@ namespace thdk.stockarto {
         }
     }
 
+    export interface IPoiSearchMachine {
+        machine: maps.IPoiSearch;
+        tracking: boolean;
+    }
+
     export class App {
         private shutterstock: stock.ShutterStock;
         private mapservice: thdk.maps.GoogleMapService;
         private map: google.maps.Map;
         private placesService: maps.placesservice.PlacesService;
         private geocodingService: maps.geocoding.GeocodingService;
-        private poiSearchMachines: maps.IPoiSearch[];
+        private poiSearchMachines: IPoiSearchMachine[];
+        private mapSearchBox: google.maps.places.SearchBox;
 
-        public start(): void {
+        public constructor() {
             const network = new Network();
             const ssDeps: stock.IStockDepencies = {
                 network: network,
@@ -38,21 +44,34 @@ namespace thdk.stockarto {
                 this.placesService = new maps.placesservice.PlacesService(new google.maps.places.PlacesService(this.map));
                 this.geocodingService = new maps.geocoding.GeocodingService(new google.maps.Geocoder());
 
-                this.initMapSearch(this.map);
-
-                const poiSearchDeps: maps.IPoiSearchDepenencies = {
-                    map: this.map,
-                    mapService: this.mapservice,
-                    placesService: this.placesService
-                };
-
+                this.mapSearchBox = this.initMapSearch(this.map);
                 this.poiSearchMachines = new Array();
-                this.poiSearchMachines.push(new maps.TypePoiSearch(poiSearchDeps, "church", { markerColor: "77450b", markerType: maps.MarkerType.church }));
-                this.poiSearchMachines.push(new maps.TypePoiSearch(poiSearchDeps, "museum", { markerColor: "4576cc", markerType: maps.MarkerType.museum }));
-                this.poiSearchMachines.push(new maps.TypePoiSearch(poiSearchDeps, "park", { markerColor: "529946", markerType: maps.MarkerType.park }));
+                this.addSearchMachines();
                 this.initMapActions(this.map);
                 this.addHandlers();
             });
+        }
+
+        private addSearchMachines() {
+            const poiSearchDeps: maps.IPoiSearchDepenencies = {
+                map: this.map,
+                mapService: this.mapservice,
+                placesService: this.placesService
+            };
+
+            this.addTypeSearchMachine(poiSearchDeps, "church", "77450b", maps.MarkerType.museum);
+            this.addTypeSearchMachine(poiSearchDeps, "museum", "4576cc", maps.MarkerType.church);
+            this.addTypeSearchMachine(poiSearchDeps, "park", "529946", maps.MarkerType.park);
+            this.addKeywordSearchMachine(poiSearchDeps, "historical", "52A6F8", maps.MarkerType.castle);
+            this.addKeywordSearchMachine(poiSearchDeps, "tourist attractions", "68B74A", maps.MarkerType.photo);
+        }
+
+        private addTypeSearchMachine(poiSearchDeps: maps.IPoiSearchDepenencies, searchtype: string, markerColor: string, markerType: maps.MarkerType) {
+            this.poiSearchMachines.push({ machine: new maps.TypePoiSearch(poiSearchDeps, searchtype, { markerColor, markerType }), tracking: false });
+        }
+
+        private addKeywordSearchMachine(poiSearchDeps: maps.IPoiSearchDepenencies, keyword: string, markerColor: string, markerType: maps.MarkerType) {
+            this.poiSearchMachines.push({ machine: new maps.KeywordPoiSearch(poiSearchDeps, keyword, { markerColor, markerType }), tracking: false });
         }
 
         private addHandlers(): void {
@@ -62,7 +81,20 @@ namespace thdk.stockarto {
                     .then(results => this.showImageSearchResults(results));
             });
 
-            google.maps.event.addListener(this.map, 'click', (event) => this.handleMapClick(event));
+            google.maps.event.addListener(this.map, 'idle', e => this.handleMapIdle(e));
+            google.maps.event.addListener(this.map, 'click', e => this.handleMapClick(e));
+        }
+
+        private handleMapIdle(event) {
+            const bounds = this.map.getBounds();
+            if (bounds) {
+                this.mapSearchBox.setBounds(bounds);
+                this.poiSearchMachines.filter(sm => sm.tracking).map(sm => sm.machine.searchBoundsAsync(this.map.getBounds()!))
+            }
+            else {
+                // if this never happens use searchBox.setBounds(bounds!);
+                alert("GOOGLE MAPS RETURNED " + bounds + " for map.getBounds.")
+            }            
         }
 
         private handleMapClick(event) {
@@ -79,7 +111,7 @@ namespace thdk.stockarto {
                 const query = this.generateSearchQuery(responses.length > 1 ? responses[1] : null, responses[0]);
 
                 const oldQuery = $("#query").val()
-                if(oldQuery != query)
+                if (oldQuery != query)
                     this.findAndShowImagesAsync(query);
             },
                 (reason) => {
@@ -94,9 +126,6 @@ namespace thdk.stockarto {
 
             const poiSearch = new maps.TypePoiSearch({ placesService: this.placesService, mapService: this.mapservice, map: this.map }, type, marker);
             poiSearch.searchAsync().then(places => poiSearch.markers.forEach(m => m.setIcon(m.getIcon() + "?highlight=00FF00")));
-
-            // this.placesService.nearbySearchAsync({ bounds: this.map.getBounds(), type: type, keyword })
-            //     .then(places => this.handleNearbyPlaces(places, marker), reason => console.log(reason));
         }
 
         private getMarkerForKeyword(keyword: string): maps.MarkerType {
@@ -120,19 +149,24 @@ namespace thdk.stockarto {
             });
 
             const $searchActionsList = $actionsWrapper.find(".poi-search-list");
-            this.poiSearchMachines.forEach(sm => {
-                const $listItem = $(`<li><span class="${sm.type}"></span></li>`);
+            this.poiSearchMachines.reverse().forEach(sm => {
+                const $listItem = $(`<li><span class="${sm.machine.type}"></span></li>`);
+                $listItem.find("span").css("background-image", "url(" + this.mapservice.getIconUrlForMarkerType(sm.machine.options, 1.5) + ")");
                 $listItem.on("click", "span", (e) => {
                     const $span = $(e.currentTarget);
-                    const keyword = $span.attr("data-keyword");
-                    if (sm.type || keyword) {
-                        sm.searchAsync();
+                    if (sm.machine.type || sm.machine.keyword) {
+                        // toggle map tracking on this search machine
+                        sm.tracking = !sm.tracking;
+
+                        // trigger search for the current bounds of the map
+                        if (sm.tracking)
+                            sm.machine.searchAsync();
                     } else {
                         // show the search box
                         $span.parent().find(".custom-search-wrapper").show();
                     }
                 });
-                $searchActionsList.append($listItem);
+                $searchActionsList.prepend($listItem);
             });
 
             $actionsWrapper.on("click", ".search-icon", (e) => {
@@ -141,24 +175,13 @@ namespace thdk.stockarto {
             })
         }
 
-        private initMapSearch(map: google.maps.Map) {
+        private initMapSearch(map: google.maps.Map): google.maps.places.SearchBox {
             // Create the search box and link it to the UI element.
             var input = <HTMLInputElement>document.getElementById('pac-input');
             var inputWrapper = <HTMLInputElement>document.getElementById('pac-input-wrapper');
             var searchBox = new google.maps.places.SearchBox(input);
 
-            map.controls[google.maps.ControlPosition.TOP_LEFT].push(inputWrapper);
-
-            // Bias the SearchBox results towards current map's viewport.
-            map.addListener('bounds_changed', (e) => {
-                const bounds = map.getBounds();
-                if (bounds)
-                    searchBox.setBounds(bounds);
-                else {
-                    // if this never happens use searchBox.setBounds(bounds!);
-                    alert("GOOGLE MAPS RETURNED " + bounds + " for map.getBounds.")
-                }
-            });
+            map.controls[google.maps.ControlPosition.TOP_LEFT].push(inputWrapper);            
 
             let markers: google.maps.Marker[] = [];
             // Listen for the event fired when the user selects a prediction and retrieve
@@ -214,6 +237,8 @@ namespace thdk.stockarto {
 
                 map.fitBounds(bounds);
             });
+
+            return searchBox;
         }
 
         private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string) {
@@ -303,5 +328,4 @@ namespace thdk.stockarto {
     }
 
     const stockartoApp = new App();
-    stockartoApp.start();
 }

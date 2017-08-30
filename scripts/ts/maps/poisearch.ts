@@ -11,8 +11,11 @@ namespace thdk.maps {
     }
 
     export interface IPoiSearch {
+        options: IPoiSearchOptions;
         type: string;
+        keyword: string;
         searchAsync(): Promise<void | placesservice.IPlaceResult[]>;
+        searchBoundsAsync(bounds: google.maps.LatLngBounds): Promise<void | placesservice.IPlaceResult[]>
     }
 
     export class PoiSearch implements IPoiSearch {
@@ -20,11 +23,10 @@ namespace thdk.maps {
         private resultsMap: string[];
         private placesService: placesservice.PlacesService;
         private mapService: GoogleMapService;
-        private keyword: string;
         private results: placesservice.IPlaceResult[];
-        private options: IPoiSearchOptions;
-
+        public options: IPoiSearchOptions;
         public type: string;
+        public keyword: string;
         public map: google.maps.Map;
 
         public markers: google.maps.Marker[];
@@ -35,9 +37,14 @@ namespace thdk.maps {
             this.map = deps.map;
             this.options = options;
             this.type = type;
+            this.keyword = keyword;
         }
 
         public searchAsync(): Promise<void | placesservice.IPlaceResult[]> {
+            return this.searchBoundsAsync(this.map.getBounds()!);
+        }
+
+        public searchBoundsAsync(bounds: google.maps.LatLngBounds): Promise<void | placesservice.IPlaceResult[]> {
             if (!this.resultsMap)
                 this.resultsMap = new Array();
 
@@ -66,6 +73,12 @@ namespace thdk.maps {
     export class TypePoiSearch extends PoiSearch {
         constructor(deps: IPoiSearchDepenencies, type: string, options: IPoiSearchOptions) {
             super(deps, options, type, "");
+        }
+    }
+
+    export class KeywordPoiSearch extends PoiSearch {
+        constructor(deps: IPoiSearchDepenencies, keyword: string, options: IPoiSearchOptions) {
+            super(deps, options, "", keyword);
         }
     }
 }
