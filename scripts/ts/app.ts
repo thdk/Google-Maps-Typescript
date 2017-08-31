@@ -158,6 +158,9 @@ namespace thdk.stockarto {
                         // toggle map tracking on this search machine
                         sm.tracking = !sm.tracking;
 
+                        // hide or show previous markers
+                        sm.machine.toggleMarkers(sm.tracking);
+
                         // trigger search for the current bounds of the map
                         if (sm.tracking)
                             sm.machine.searchAsync();

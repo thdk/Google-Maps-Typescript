@@ -16,6 +16,7 @@ namespace thdk.maps {
         keyword: string;
         searchAsync(): Promise<void | placesservice.IPlaceResult[]>;
         searchBoundsAsync(bounds: google.maps.LatLngBounds): Promise<void | placesservice.IPlaceResult[]>
+        toggleMarkers(show: boolean): void;
     }
 
     export class PoiSearch implements IPoiSearch {
@@ -38,6 +39,16 @@ namespace thdk.maps {
             this.options = options;
             this.type = type;
             this.keyword = keyword;
+            this.markers = [];
+        }
+
+        public toggleMarkers(show:boolean) {
+            if (!this.markers)
+                return;
+
+            this.markers.forEach(m => {
+                m.setVisible(show);
+            });
         }
 
         public searchAsync(): Promise<void | placesservice.IPlaceResult[]> {
@@ -66,7 +77,7 @@ namespace thdk.maps {
         }
 
         private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[]): void {
-            this.markers = places.map(place => this.mapService.addMarker(place, this.map, this.options));
+            this.markers = this.markers.concat(places.map(place => this.mapService.addMarker(place, this.map, this.options)));
         }
     }
 
