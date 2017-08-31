@@ -64,10 +64,10 @@ namespace thdk.maps {
 
             return this.placesService.nearbySearchAsync({ bounds: this.map.getBounds()!, keyword: this.keyword, type: this.type })
                 .then(results => {
-                    const newResults = results.filter(r => this.resultsMap.indexOf(r.place_id) == -1);
+                    let newResults = results.filter(r => this.resultsMap.indexOf(r.place_id) == -1);
                     this.results = this.results.concat(newResults);
                     // todo: filter newResults
-
+                    newResults = newResults.filter(r => r.rating > 3);
                     this.handleNearbyPlaces(newResults);
                     return newResults;
                 },
