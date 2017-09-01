@@ -28,6 +28,9 @@ namespace thdk.stockarto {
         private poiSearchMachines: IPoiSearchMachine[];
         private mapSearchBox: google.maps.places.SearchBox;
 
+        // JQUERY
+        private $googlePlaceResult: JQuery;
+
         public constructor() {
             const network = new Network();
             const ssDeps: stock.IStockDepencies = {
@@ -35,6 +38,8 @@ namespace thdk.stockarto {
                 clientId: config.shutterstock.clientId,
                 clientSecret: config.shutterstock.clientSecret
             };
+
+            this.$googlePlaceResult = $("#google-place-result");
 
             this.shutterstock = new stock.ShutterStock(ssDeps);
             this.mapservice = new maps.GoogleMapService(config.google.applicationId);
@@ -87,6 +92,7 @@ namespace thdk.stockarto {
 
         private markerClick(event, marker: google.maps.Marker, place: thdk.maps.placesservice.IPlaceResult) {
             this.mapClick(event, place);
+            this.showPlace(place);
         }
 
         private handleMapIdle(event) {
@@ -106,6 +112,9 @@ namespace thdk.stockarto {
         }
 
         private mapClick(event, place?: maps.placesservice.IPlaceResult) {
+            if (this.mapservice.infowindow)
+                this.mapservice.infowindow.close();
+            
             // get the current clicked place
             const promises = new Array();
             promises.push(this.geocodingService.geocodeAsync({ location: event.latLng }));
@@ -188,9 +197,9 @@ namespace thdk.stockarto {
 
         private initMapSearch(map: google.maps.Map): google.maps.places.SearchBox {
             // Create the search box and link it to the UI element.
-            var input = <HTMLInputElement>document.getElementById('pac-input');
-            var inputWrapper = <HTMLInputElement>document.getElementById('pac-input-wrapper');
-            var searchBox = new google.maps.places.SearchBox(input);
+            const input = <HTMLInputElement>document.getElementById('pac-input');
+            const inputWrapper = <HTMLInputElement>document.getElementById('pac-input-wrapper');
+            const searchBox = new google.maps.places.SearchBox(input);
 
             map.controls[google.maps.ControlPosition.TOP_LEFT].push(inputWrapper);
 
@@ -198,7 +207,7 @@ namespace thdk.stockarto {
             // Listen for the event fired when the user selects a prediction and retrieve
             // more details for that place.
             searchBox.addListener('places_changed', () => {
-                var places = searchBox.getPlaces();
+                const places = searchBox.getPlaces();
 
                 if (places.length == 0) {
                     return;
@@ -211,13 +220,13 @@ namespace thdk.stockarto {
                 markers = [];
 
                 // For each place, get the icon, name and location.
-                var bounds = new google.maps.LatLngBounds();
+                const bounds = new google.maps.LatLngBounds();
                 places.forEach(place => {
                     if (!place.geometry) {
                         console.log("Returned place contains no geometry");
                         return;
                     }
-                    var icon = {
+                    const icon = {
                         url: place.icon,
                         size: new google.maps.Size(71, 71),
                         origin: new google.maps.Point(0, 0),
@@ -252,19 +261,39 @@ namespace thdk.stockarto {
             return searchBox;
         }
 
-        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string) {
-            this.placesService.getDetailsAsync({ placeId }).then(poi => {
-                this.mapservice.infowindow.setContent(this.getInfoWindowContentForPlace(poi));
-                this.mapservice.infowindow.open(this.map);
-                this.mapservice.infowindow.setPosition(latLng);
+        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string): Promise<google.maps.InfoWindow>{
+            return this.placesService.getDetailsAsync({ placeId }).then(poi => {
+                this.showInfoWindowForPlace(poi);
+                return this.mapservice.infowindow;
             });
         }
 
+        private showInfoWindowForPlace(place: google.maps.places.PlaceResult) {
+            this.mapservice.infowindow.setContent(this.getInfoWindowContentForPlace(place));
+            this.mapservice.infowindow.open(this.map);
+            this.mapservice.infowindow.setPosition(new google.maps.LatLng(place.geometry.location.lat(), place.geometry.location.lng()));
+        }
+
+        private showPlace(place: google.maps.places.PlaceResult) {
+            this.$googlePlaceResult.show();
+            this.$googlePlaceResult.find(".name").html(place.name);
+            this.$googlePlaceResult.find(".images").empty().append(this.getPhotosForPlace(place));
+        }
+
+        private getPhotosForPlace(place): JQuery {
+            if (!place.photos)
+                return $("");
+
+            this.placesService.
+            return place.photos.map(photo => {
+                return $(`<img src="${photo.getUrl({ maxHeight: 600, maxWidth: 600 })}"/>`); 
+            })
+        }
         private getInfoWindowContentForPlace(place: maps.placesservice.IPlaceResult): string {
             let content = '<div class="info-window">';
             if (place.photos) {
                 content += '<div class="iw-imageholder">';
-                content += '<img src="' + place.photos[0].getUrl({ maxHeight: 350, maxWidth: 350 }) + '"/>';
+                content += '<img src="' + place.photos[0].getUrl({ maxHeight: 200, maxWidth: 200 }) + '"/>';
                 content += '</div>'
             }
             content += '<div class="iw-title">' + place.name + '</div>'

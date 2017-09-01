@@ -43,7 +43,7 @@ namespace thdk.maps {
             this.markers = [];
         }
 
-        public toggleMarkers(show:boolean) {
+        public toggleMarkers(show: boolean) {
             if (!this.markers)
                 return;
 
@@ -67,8 +67,18 @@ namespace thdk.maps {
                 .then(results => {
                     let newResults = results.filter(r => this.resultsMap.indexOf(r.place_id) == -1);
                     this.results = this.results.concat(newResults);
-                    // todo: filter newResults
-                    newResults = newResults.filter(r => r.rating > 3);
+
+                    const ignoreTypes: string[] = ["art_gallery", "restaurant", "hotel", "store", "lodging", "real_estate_agency", "dentist", "health", "shopping_mall", "travel_agency", "parking", "bar", "cafe", "food", "bank", "finance", "bus_station", "light_rail_station", "transit_station", "general_contractor", "car_repair", "hospital", "beauty_salon"];
+                    const pois: maps.placesservice.IPlaceResult[] = new Array();
+                    newResults = newResults.filter(place => {
+                        if (!utils.anyMatchInArray(place.types, ignoreTypes)) {
+                            // TODO: configure minimum rating
+                            if (place.rating > 3)
+                                return true;
+                        }
+
+                        return false;
+                    });
                     this.handleNearbyPlaces(newResults);
                     return newResults;
                 },
@@ -81,7 +91,7 @@ namespace thdk.maps {
             this.markers = this.markers.concat(places.map(place => {
                 const marker = this.mapService.addMarker(place, this.map, this.options);
                 // add click event
-                if(this.options.clickEvent)
+                if (this.options.clickEvent)
                     marker.addListener("click", (event) => {
                         this.options.clickEvent(event, marker, place);
                     });
