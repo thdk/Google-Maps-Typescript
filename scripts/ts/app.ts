@@ -59,19 +59,19 @@ namespace thdk.stockarto {
                 placesService: this.placesService
             };
 
-            this.addTypeSearchMachine(poiSearchDeps, "church", "77450b", maps.MarkerType.museum);
-            this.addTypeSearchMachine(poiSearchDeps, "museum", "4576cc", maps.MarkerType.church);
+            this.addTypeSearchMachine(poiSearchDeps, "museum", "77450b", maps.MarkerType.museum);
+            this.addTypeSearchMachine(poiSearchDeps, "church", "4576cc", maps.MarkerType.church);
             this.addTypeSearchMachine(poiSearchDeps, "park", "529946", maps.MarkerType.park);
             this.addKeywordSearchMachine(poiSearchDeps, "historical", "52A6F8", maps.MarkerType.castle);
             this.addKeywordSearchMachine(poiSearchDeps, "tourist attractions", "68B74A", maps.MarkerType.photo);
         }
 
         private addTypeSearchMachine(poiSearchDeps: maps.IPoiSearchDepenencies, searchtype: string, markerColor: string, markerType: maps.MarkerType) {
-            this.poiSearchMachines.push({ machine: new maps.TypePoiSearch(poiSearchDeps, searchtype, { markerColor, markerType }), tracking: false });
+            this.poiSearchMachines.push({ machine: new maps.TypePoiSearch(poiSearchDeps, searchtype, { markerColor, markerType, clickEvent: (event, marker, place) => this.markerClick(event, marker, place) }), tracking: false });
         }
 
         private addKeywordSearchMachine(poiSearchDeps: maps.IPoiSearchDepenencies, keyword: string, markerColor: string, markerType: maps.MarkerType) {
-            this.poiSearchMachines.push({ machine: new maps.KeywordPoiSearch(poiSearchDeps, keyword, { markerColor, markerType }), tracking: false });
+            this.poiSearchMachines.push({ machine: new maps.KeywordPoiSearch(poiSearchDeps, keyword, { markerColor, markerType, clickEvent: (event, marker, place) => this.markerClick(event, marker, place) }), tracking: false });
         }
 
         private addHandlers(): void {
@@ -85,6 +85,10 @@ namespace thdk.stockarto {
             google.maps.event.addListener(this.map, 'click', e => this.handleMapClick(e));
         }
 
+        private markerClick(event, marker: google.maps.Marker, place: thdk.maps.placesservice.IPlaceResult) {
+            this.mapClick(event, place);
+        }
+
         private handleMapIdle(event) {
             const bounds = this.map.getBounds();
             if (bounds) {
@@ -94,21 +98,25 @@ namespace thdk.stockarto {
             else {
                 // if this never happens use searchBox.setBounds(bounds!);
                 alert("GOOGLE MAPS RETURNED " + bounds + " for map.getBounds.")
-            }            
+            }
         }
 
         private handleMapClick(event) {
+            this.mapClick(event);
+        }
+
+        private mapClick(event, place?: maps.placesservice.IPlaceResult) {
             // get the current clicked place
             const promises = new Array();
             promises.push(this.geocodingService.geocodeAsync({ location: event.latLng }));
 
-            if (event.placeId) {
+            if (event.placeId && !place) {
                 promises.push(this.placesService.getDetailsAsync({ placeId: event.placeId }));
                 event.stop();
             }
 
             Promise.all(promises).then(responses => {
-                const query = this.generateSearchQuery(responses.length > 1 ? responses[1] : null, responses[0]);
+                const query = this.generateSearchQuery(responses.length > 1 ? responses[1] : place, responses[0]);
 
                 const oldQuery = $("#query").val()
                 if (oldQuery != query)
@@ -184,7 +192,7 @@ namespace thdk.stockarto {
             var inputWrapper = <HTMLInputElement>document.getElementById('pac-input-wrapper');
             var searchBox = new google.maps.places.SearchBox(input);
 
-            map.controls[google.maps.ControlPosition.TOP_LEFT].push(inputWrapper);            
+            map.controls[google.maps.ControlPosition.TOP_LEFT].push(inputWrapper);
 
             let markers: google.maps.Marker[] = [];
             // Listen for the event fired when the user selects a prediction and retrieve

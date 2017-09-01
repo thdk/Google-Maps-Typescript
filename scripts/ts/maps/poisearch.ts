@@ -8,6 +8,7 @@ namespace thdk.maps {
     export interface IPoiSearchOptions {
         markerType: MarkerType;
         markerColor?: string;
+        clickEvent: (event, marker: google.maps.Marker, place: thdk.maps.placesservice.IPlaceResult) => void;
     }
 
     export interface IPoiSearch {
@@ -77,7 +78,15 @@ namespace thdk.maps {
         }
 
         private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[]): void {
-            this.markers = this.markers.concat(places.map(place => this.mapService.addMarker(place, this.map, this.options)));
+            this.markers = this.markers.concat(places.map(place => {
+                const marker = this.mapService.addMarker(place, this.map, this.options);
+                // add click event
+                if(this.options.clickEvent)
+                    marker.addListener("click", (event) => {
+                        this.options.clickEvent(event, marker, place);
+                    });
+                return marker;
+            }));
         }
     }
 
