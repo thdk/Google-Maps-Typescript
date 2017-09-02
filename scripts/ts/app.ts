@@ -116,7 +116,7 @@ namespace thdk.stockarto {
         private mapClick(event, place?: maps.placesservice.IPlaceResult) {
             if (this.mapservice.infowindow)
                 this.mapservice.infowindow.close();
-            
+
             // get the current clicked place
             const promises = new Array();
             promises.push(this.geocodingService.geocodeAsync({ location: event.latLng }));
@@ -263,7 +263,7 @@ namespace thdk.stockarto {
             return searchBox;
         }
 
-        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string): Promise<google.maps.InfoWindow>{
+        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string): Promise<google.maps.InfoWindow> {
             return this.placesService.getDetailsAsync({ placeId }).then(poi => {
                 this.showInfoWindowForPlace(poi);
                 return this.mapservice.infowindow;
@@ -287,7 +287,7 @@ namespace thdk.stockarto {
                 return $("");
 
             return place.photos.map(photo => {
-                return $(`<img src="${photo.getUrl({ maxHeight: 600, maxWidth: 600 })}"/>`); 
+                return $(`<img src="${photo.getUrl({ maxHeight: 600, maxWidth: 600 })}"/>`);
             })
         }
         private getInfoWindowContentForPlace(place: maps.placesservice.IPlaceResult): string {
@@ -350,7 +350,7 @@ namespace thdk.stockarto {
         }
 
         private showImageSearchResults(results: shutterstock.ImageSearchResults) {
-            this.$stockPhotoResult.find(".no-results").toggle(!results.data.length);            
+            this.$stockPhotoResult.find(".no-results").toggle(!results.data.length);
 
             const $container = this.$stockPhotoResult.find("#imagecontainer");
             $container.empty();
@@ -369,6 +369,7 @@ namespace thdk.stockarto {
 
         }
     }
-
-    const stockartoApp = new App();
+    window.onload = function () {
+        const stockartoApp = new App();
+    };
 }
