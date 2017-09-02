@@ -7,8 +7,16 @@ body {
 #results {
   width: 1/3 * 100%;
   float: left;
-  overflow: auto;
+  overflow: hidden;
   height: 100%;
+
+  .results-inner {
+    overflow-y: scroll;
+    height: 100%;
+    padding-right: 17px;
+    width: 103%;
+    background-color: #e4e4e4;
+  }
 
   #querybox {
     height: 5%;
@@ -29,15 +37,20 @@ body {
       font-size: 1.2em;
     }
   }
-
-  #imagecontainer {
-    height: 95%;
-
-    img {
-      width: 100%;
-      height: auto;
+  #stock-photo-result {
+    .no-results {
+      padding-left: 1em;
     }
-   }  
+
+    #imagecontainer {
+      height: 95%;
+
+      img {
+        width: 100%;
+        height: auto;
+      }
+    }  
+  }
 }
 
 #search {

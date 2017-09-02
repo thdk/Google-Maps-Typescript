@@ -6,17 +6,21 @@
 
 <body>
     <div id="results">
-        <div id="querybox" style="display: none;">
-            <input type="text" id='query' />
-            <input type="button" value="Search" id="searchButton" />
-        </div>
-        <div id="google-place-result" style="display: none;">
-            <div class="images"></div>
-            <h1 class="name"></h1>
-        </div>
-        <div id="imagecontainer">
-            <p class="no-results">No stock photos found.</p>
-            <img />
+        <div class="results-inner">
+            <div id="querybox" style="display: none;">
+                <input type="text" id='query' />
+                <input type="button" value="Search" id="searchButton" />
+            </div>
+            <div id="google-place-result" style="display: none;">
+                <div class="images"></div>
+                <h1 class="name"></h1>
+            </div>
+            <div id="stock-photo-result">
+                <p class="no-results" style="display: none;">No stock photos found.</p>
+                <div id="imagecontainer">
+                    <img />
+                </div>
+            </div>
         </div>
     </div>
     <div id="search">

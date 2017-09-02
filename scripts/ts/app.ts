@@ -30,6 +30,7 @@ namespace thdk.stockarto {
 
         // JQUERY
         private $googlePlaceResult: JQuery;
+        private $stockPhotoResult: JQuery;
 
         public constructor() {
             const network = new Network();
@@ -40,6 +41,7 @@ namespace thdk.stockarto {
             };
 
             this.$googlePlaceResult = $("#google-place-result");
+            this.$stockPhotoResult = $("#stock-photo-result");
 
             this.shutterstock = new stock.ShutterStock(ssDeps);
             this.mapservice = new maps.GoogleMapService(config.google.applicationId);
@@ -284,7 +286,6 @@ namespace thdk.stockarto {
             if (!place.photos)
                 return $("");
 
-            this.placesService.
             return place.photos.map(photo => {
                 return $(`<img src="${photo.getUrl({ maxHeight: 600, maxWidth: 600 })}"/>`); 
             })
@@ -349,11 +350,13 @@ namespace thdk.stockarto {
         }
 
         private showImageSearchResults(results: shutterstock.ImageSearchResults) {
+            this.$stockPhotoResult.find(".no-results").toggle(!results.data.length);            
+
+            const $container = this.$stockPhotoResult.find("#imagecontainer");
+            $container.empty();
+
             if (!results.data)
                 return;
-
-            const $container = $("#imagecontainer");
-            $container.empty();
 
             results.data.forEach(imgData => {
                 if (imgData.assets && imgData.assets.preview !== undefined) {
