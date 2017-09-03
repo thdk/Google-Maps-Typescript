@@ -281,9 +281,12 @@ namespace thdk.stockarto {
             this.$googlePlaceResult.show();
             console.log(place.website);
             this.$googlePlaceResult.find(".name").html(place.name);
-            this.$googlePlaceResult.find(".images").empty().append(this.getPhotosForPlace(place));
+            const $images = this.$googlePlaceResult.find(".images");
+            $images.empty().append(this.getPhotosForPlace(place));
 
             this.placesService.getDetailsAsync({ placeId: place.place_id }).then(p => {
+                p.photos.shift();
+                $images.append(this.getPhotosForPlace(p));
                 this.$googlePlaceResult.find(".details").toggle(!!p.website).html(p.website);
             })
         }
