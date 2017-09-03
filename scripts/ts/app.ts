@@ -68,6 +68,7 @@ namespace thdk.stockarto {
 
             this.addTypeSearchMachine(poiSearchDeps, "museum", "77450b", maps.MarkerType.museum);
             this.addTypeSearchMachine(poiSearchDeps, "church", "4576cc", maps.MarkerType.church);
+            this.addKeywordSearchMachine(poiSearchDeps, "architecture", "3A4B5C", maps.MarkerType.poi);
             this.addTypeSearchMachine(poiSearchDeps, "park", "529946", maps.MarkerType.park);
             this.addKeywordSearchMachine(poiSearchDeps, "historical", "52A6F8", maps.MarkerType.castle);
             this.addKeywordSearchMachine(poiSearchDeps, "tourist attractions", "68B74A", maps.MarkerType.photo);
@@ -116,7 +117,7 @@ namespace thdk.stockarto {
         private mapClick(event, place?: maps.placesservice.IPlaceResult) {
             if (this.mapservice.infowindow)
                 this.mapservice.infowindow.close();
-            
+
             // get the current clicked place
             const promises = new Array();
             promises.push(this.geocodingService.geocodeAsync({ location: event.latLng }));
@@ -263,7 +264,7 @@ namespace thdk.stockarto {
             return searchBox;
         }
 
-        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string): Promise<google.maps.InfoWindow>{
+        private loadInfoWindowAsync(latLng: google.maps.LatLng, placeId: string): Promise<google.maps.InfoWindow> {
             return this.placesService.getDetailsAsync({ placeId }).then(poi => {
                 this.showInfoWindowForPlace(poi);
                 return this.mapservice.infowindow;
@@ -278,8 +279,13 @@ namespace thdk.stockarto {
 
         private showPlace(place: google.maps.places.PlaceResult) {
             this.$googlePlaceResult.show();
+            console.log(place.website);
             this.$googlePlaceResult.find(".name").html(place.name);
             this.$googlePlaceResult.find(".images").empty().append(this.getPhotosForPlace(place));
+
+            this.placesService.getDetailsAsync({ placeId: place.place_id }).then(p => {
+                this.$googlePlaceResult.find(".details").toggle(!!p.website).html(p.website);
+            })
         }
 
         private getPhotosForPlace(place): JQuery {
@@ -287,7 +293,7 @@ namespace thdk.stockarto {
                 return $("");
 
             return place.photos.map(photo => {
-                return $(`<img src="${photo.getUrl({ maxHeight: 600, maxWidth: 600 })}"/>`); 
+                return $(`<img src="${photo.getUrl({ maxHeight: 600, maxWidth: 600 })}"/>`);
             })
         }
         private getInfoWindowContentForPlace(place: maps.placesservice.IPlaceResult): string {
@@ -350,7 +356,7 @@ namespace thdk.stockarto {
         }
 
         private showImageSearchResults(results: shutterstock.ImageSearchResults) {
-            this.$stockPhotoResult.find(".no-results").toggle(!results.data.length);            
+            this.$stockPhotoResult.find(".no-results").toggle(!results.data.length);
 
             const $container = this.$stockPhotoResult.find("#imagecontainer");
             $container.empty();
