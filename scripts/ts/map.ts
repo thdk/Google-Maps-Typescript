@@ -1,4 +1,5 @@
 namespace thdk.maps {
+    // test
     export interface IMap {
 
     }
