@@ -2,5 +2,7 @@
 scripts/ts/*
 styles/sass/*
 .gitignore
+.git-ftp-ignore
+.git-ftp-include
 buildall.bat
 README.md
