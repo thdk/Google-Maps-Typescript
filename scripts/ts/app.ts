@@ -1,5 +1,4 @@
 namespace thdk.stockarto {
-    // test
     declare const config: IAppConfig;
 
     export interface IAppConfig {
