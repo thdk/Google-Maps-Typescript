@@ -1,0 +1,6 @@
+.vscode/*
+scripts/ts/*
+styles/sass/*
+.gitignore
+buildall.bat
+README.md

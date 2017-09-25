@@ -1,0 +1,10 @@
+!scripts/config.js
+scripts/js/app.js:scripts/ts/app.ts
+scripts/js/map.js:scripts/ts/map.ts
+scripts/js/ss.js:scripts/ts/ss.ts
+scripts/js/thdk.js:scripts/ts/thdk.ts
+scripts/js/maps/geocodingService.js:scripts/ts/maps/geocodingService.ts
+scripts/js/maps/placesService.js:scripts/ts/maps/placesService.ts
+scripts/js/maps/poisearch.js:scripts/ts/maps/poisearch.ts
+scripts/js/interface/shutterstock.js:scripts/ts/interface/shutterstock.ts
+styles/css/styles.css:styles/sass/styles.scss
