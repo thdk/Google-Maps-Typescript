@@ -68,6 +68,7 @@ namespace thdk.stockarto {
 
             this.addTypeSearchMachine(poiSearchDeps, "museum", "77450b", maps.MarkerType.museum);
             this.addTypeSearchMachine(poiSearchDeps, "church", "4576cc", maps.MarkerType.church);
+            this.addKeywordSearchMachine(poiSearchDeps, "architecture", "3F4BFC", maps.MarkerType.poi);
             this.addTypeSearchMachine(poiSearchDeps, "park", "529946", maps.MarkerType.park);
             this.addKeywordSearchMachine(poiSearchDeps, "historical", "52A6F8", maps.MarkerType.castle);
             this.addKeywordSearchMachine(poiSearchDeps, "tourist attractions", "68B74A", maps.MarkerType.photo);
