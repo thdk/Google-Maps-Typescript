@@ -87,7 +87,7 @@ namespace thdk.maps {
 
         public getMap(id: string): google.maps.Map {
             return new google.maps.Map(document.getElementById(id), {
-                center: { lat: 51.055605, lng: 3.711732 },
+                center: { lat: 51.055605, lng: 23.711732 },
                 zoom: 12
             });
         }
