@@ -68,7 +68,7 @@ namespace thdk.stockarto {
 
             this.addTypeSearchMachine(poiSearchDeps, "museum", "77450b", maps.MarkerType.museum);
             this.addTypeSearchMachine(poiSearchDeps, "church", "4576cc", maps.MarkerType.church);
-            this.addKeywordSearchMachine(poiSearchDeps, "architecture", "3A4B5C", maps.MarkerType.poi);
+            this.addKeywordSearchMachine(poiSearchDeps, "architecture", "3F4BFC", maps.MarkerType.poi);
             this.addTypeSearchMachine(poiSearchDeps, "park", "529946", maps.MarkerType.park);
             this.addKeywordSearchMachine(poiSearchDeps, "historical", "52A6F8", maps.MarkerType.castle);
             this.addKeywordSearchMachine(poiSearchDeps, "tourist attractions", "68B74A", maps.MarkerType.photo);
@@ -170,10 +170,15 @@ namespace thdk.stockarto {
 
             const $searchActionsList = $actionsWrapper.find(".poi-search-list");
             this.poiSearchMachines.reverse().forEach(sm => {
-                const $listItem = $(`<li><span class="${sm.machine.type}"></span></li>`);
-                $listItem.find("span").css("background-image", "url(" + this.mapservice.getIconUrlForMarkerType(sm.machine.options, 1.5) + ")");
+                const $listItem = $(`<li><span class="${sm.machine.type} active" style="display:none;"></span><span class="${sm.machine.type} inactive"></span></li>`);
+                $listItem.find("span.active").css("background-image", "url(" + this.mapservice.getIconUrlForMarkerType(sm.machine.options, 1.5) + ")");
+                $listItem.find("span.inactive").css("background-image", "url(" + this.mapservice.getIconUrlForMarkerType({markerColor: '777777', markerType: sm.machine.options.markerType}, 1.5) + ")");
                 $listItem.on("click", "span", (e) => {
                     const $span = $(e.currentTarget);
+
+                    // toggle the active/inactive icon
+                    $span.parent().find("span").toggle();
+
                     if (sm.machine.type || sm.machine.keyword) {
                         // toggle map tracking on this search machine
                         sm.tracking = !sm.tracking;
@@ -284,11 +289,11 @@ namespace thdk.stockarto {
             const $images = this.$googlePlaceResult.find(".images");
             $images.empty().append(this.getPhotosForPlace(place));
 
-            this.placesService.getDetailsAsync({ placeId: place.place_id }).then(p => {
-                p.photos.shift();
-                $images.append(this.getPhotosForPlace(p));
-                this.$googlePlaceResult.find(".details").toggle(!!p.website).html(p.website);
-            })
+            // this.placesService.getDetailsAsync({ placeId: place.place_id }).then(p => {
+            //     p.photos.shift();
+            //     $images.append(this.getPhotosForPlace(p));
+            //     this.$googlePlaceResult.find(".details").toggle(!!p.website).html(p.website);
+            // })
         }
 
         private getPhotosForPlace(place): JQuery {
