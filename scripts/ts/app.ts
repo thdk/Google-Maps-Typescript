@@ -383,6 +383,7 @@ namespace thdk.stockarto {
 
         }
     }
-
-    const stockartoApp = new App();
+    window.onload = function () {
+        const stockartoApp = new App();
+    };
 }
