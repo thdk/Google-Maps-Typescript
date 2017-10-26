@@ -90,10 +90,8 @@ namespace thdk.maps {
         private handleNearbyPlaces(places: maps.placesservice.IPlaceResult[]): void {
             // don't add the same place twice
             places = places.filter(place => !this.markers.find(m => m.getPosition().equals(place.geometry.location)));
-            if (!places.length) {
-                console.log("No new places in the result set");
+            if (!places.length)
                 return;
-            }
 
             // add markers for the new nearby places
             this.markers = this.markers.concat(places.map(place => {
