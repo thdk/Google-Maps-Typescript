@@ -1,4 +1,4 @@
 /scripts/js
 /scripts/config.js
-
+node_modules/
 /styles/css

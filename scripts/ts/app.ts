@@ -1,4 +1,5 @@
 namespace thdk.stockarto {
+    declare const ShutterstockOAuth: any;
     declare const config: IAppConfig;
 
     export interface IAppConfig {
@@ -68,7 +69,7 @@ namespace thdk.stockarto {
 
             this.addTypeSearchMachine(poiSearchDeps, "museum", "77450b", maps.MarkerType.museum);
             this.addTypeSearchMachine(poiSearchDeps, "church", "4576cc", maps.MarkerType.church);
-            this.addKeywordSearchMachine(poiSearchDeps, "architecture", "3F4BFC", maps.MarkerType.poi);
+            this.addKeywordSearchMachine(poiSearchDeps, "square", "3F4BFC", maps.MarkerType.poi);
             this.addTypeSearchMachine(poiSearchDeps, "park", "529946", maps.MarkerType.park);
             this.addKeywordSearchMachine(poiSearchDeps, "historical", "52A6F8", maps.MarkerType.castle);
             this.addKeywordSearchMachine(poiSearchDeps, "tourist attractions", "68B74A", maps.MarkerType.photo);
@@ -89,8 +90,24 @@ namespace thdk.stockarto {
                     .then(results => this.showImageSearchResults(results));
             });
 
+            $container.on("click", "#loginBtn", e => this.loginButtonClickEvent(e));
+
             google.maps.event.addListener(this.map, 'idle', e => this.handleMapIdle(e));
             google.maps.event.addListener(this.map, 'click', e => this.handleMapClick(e));
+        }
+
+        private loginButtonClickEvent(e: JQueryEventObject) {
+            //build the oauth object
+            var options = {
+                client_id: this.shutterstock.clientId,
+                scope: "user.email",
+                redirect_endpoint: "oauth/redirect.html",
+                success: (data) => {
+                    console.log(data.code);
+                }
+              };
+              var oauth = new ShutterstockOAuth(options);
+              oauth.authorize();
         }
 
         private markerClick(event, marker: google.maps.Marker, place: thdk.maps.placesservice.IPlaceResult) {
@@ -358,12 +375,12 @@ namespace thdk.stockarto {
                 .map(a => a.short_name)[0];
         }
 
-        private findImagesAsync(): Promise<shutterstock.ImageSearchResults> {
+        private findImagesAsync(): Promise<shutterstock.images.ImageSearchResults> {
             const q = $('#query').val();
             return this.shutterstock.findAsync(q);
         }
 
-        private showImageSearchResults(results: shutterstock.ImageSearchResults) {
+        private showImageSearchResults(results: shutterstock.images.ImageSearchResults) {
             this.$stockPhotoResult.find(".no-results").toggle(!results.data.length);
 
             const $container = this.$stockPhotoResult.find("#imagecontainer");
