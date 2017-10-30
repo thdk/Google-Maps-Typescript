@@ -1,0 +1,29 @@
+{
+  "name": "stockarto",
+  "version": "1.0.0",
+  "description": "Buy stock photos from a map",
+  "main": "scripts/js/app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thdk/Google-Maps-Typescript.git"
+  },
+  "keywords": [
+    "google",
+    "maps",
+    "shutterstock",
+    "stock",
+    "photos"
+  ],
+  "author": "Thomas Dekiere",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thdk/Google-Maps-Typescript/issues"
+  },
+  "homepage": "https://github.com/thdk/Google-Maps-Typescript#readme",
+  "dependencies": {
+    "http-server": "^0.10.0"
+  }
+}
