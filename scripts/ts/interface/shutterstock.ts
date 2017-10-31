@@ -72,4 +72,15 @@ namespace shutterstock {
             id: string;
         }
     }
+
+    export namespace oauth {
+        export interface IShutterStockAuthorizationRequest extends thdk.oauth.IAuthorizationCodeRequest {
+            realm?: "customer" | "contributor";
+        }
+
+        export interface IShutterStockAccessTokenRequest extends thdk.oauth.IAccessTokenRequest {
+            realm?: "customer" | "contributor";
+            client_secret: string;
+        }
+    }
 }

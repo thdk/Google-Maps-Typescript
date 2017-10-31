@@ -47,12 +47,34 @@ namespace thdk.utils {
 
         return found;
     };
+
+    export function addQueryStringParams(url: string, params: object | Falsy){
+        if (!params)
+            return url;
+        
+        if (url.indexOf("?") !== -1)
+            url += "&";
+        else
+            url += "?";
+
+        return url + Object
+              .keys(params)
+              .map(function(key){
+                return key+"="+encodeURIComponent(params[key])
+              })
+              .join("&")
+      }
 }
 
 namespace thdk {
-    export class Network {
-        public postAsync(url: string, data: any): Promise<{}> {
-            return new Promise<{}>((resolve, reject) => {
+    export interface INetwork {
+        postAsync<T>(url: string, data: any): Promise<T>;
+        getAsync<T>(url: string, params?: object, auth?: string): Promise<T>
+    }
+
+    export class Network implements INetwork{
+        public postAsync<T>(url: string, data: any): Promise<T> {
+            return new Promise<T>((resolve, reject) => {
                 // construct an HTTP request
                 var xhr = new XMLHttpRequest();
                 xhr.open("POST", url, true);
@@ -67,18 +89,23 @@ namespace thdk {
             });
         }
 
-        public getAsync<T>(url: string, auth: string): Promise<T> {
+        public getAsync<T>(url: string, params?: object, auth?: string): Promise<T> {
             return new Promise<T>((resolve, reject) => {
                 // construct an HTTP request
                 var xhr = new XMLHttpRequest();
+
+                url = thdk.utils.addQueryStringParams(url, params);
+
                 xhr.open('GET', url);
-                xhr.setRequestHeader('Authorization', auth);
+                if (auth)
+                    xhr.setRequestHeader('Authorization', auth);
+
                 xhr.send();
 
                 xhr.onloadend = function (data) {
                     resolve(JSON.parse(xhr.responseText));
                 };
             });
-        }
+        }        
     }
 }

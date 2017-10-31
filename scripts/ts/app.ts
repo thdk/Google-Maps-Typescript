@@ -1,5 +1,4 @@
-namespace thdk.stockarto {
-    declare const ShutterstockOAuth: any;
+namespace thdk.stockarto {    
     declare const config: IAppConfig;
 
     export interface IAppConfig {
@@ -35,10 +34,18 @@ namespace thdk.stockarto {
 
         public constructor() {
             const network = new Network();
+            const oauthProps: oauth.OAuthProperties = {
+                clientId: config.shutterstock.clientId,
+                clientSecret: config.shutterstock.clientSecret,
+                authorizationEndpoint: "https://api.shutterstock.com/v2/oauth/authorize",
+                tokenEndpoint: "https://api.shutterstock.com/v2/oauth/access_token",
+                redirectUri: "oauth/redirect.html"
+            };
+
+            const ssOauth: thdk.stock.ShutterStockOauth = new thdk.stock.ShutterStockOauth(network, oauthProps);
             const ssDeps: stock.IStockDepencies = {
                 network: network,
-                clientId: config.shutterstock.clientId,
-                clientSecret: config.shutterstock.clientSecret
+                oauth: ssOauth
             };
 
             this.$googlePlaceResult = $("#google-place-result");
@@ -97,17 +104,7 @@ namespace thdk.stockarto {
         }
 
         private loginButtonClickEvent(e: JQueryEventObject) {
-            //build the oauth object
-            var options = {
-                client_id: this.shutterstock.clientId,
-                scope: "user.email",
-                redirect_endpoint: "oauth/redirect.html",
-                success: (data) => {
-                    console.log(data.code);
-                }
-              };
-              var oauth = new ShutterstockOAuth(options);
-              oauth.authorize();
+           this.shutterstock.authorizeAsync();
         }
 
         private markerClick(event, marker: google.maps.Marker, place: thdk.maps.placesservice.IPlaceResult) {
