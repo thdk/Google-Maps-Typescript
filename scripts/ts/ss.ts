@@ -8,17 +8,6 @@ namespace thdk.oauth {
         ClientCredentials
     }
 
-    export type AccessTokenResponse = {
-        accessToken: string;
-        tokenType: string;
-        expiresIn?: number;
-        refreshToken?: string;
-        scope?: string;
-        error?: "invalid_request" | "invalid_client" | "invalid_grant" | "unauthorized_client" | "unsupported_grant_type" | "invalid_scope";
-        errorDescription?: string;
-        errorUri?: string;
-    }
-
     export type OAuthProperties = {
         authorizationEndpoint: string;
         tokenEndpoint: string;
@@ -35,30 +24,14 @@ namespace thdk.oauth {
         state?: string;
     }
 
-    export interface IAccessTokenRequest {
-        client_id: string;
-        client_secret: string;
-        code: string;
-        grant_type: "authorization_code";
-        redirect_uri?: string;
-    }
-
-    export interface IAccessTokenResponse {
-        access_token: string;
-        token_type: string;
-        expires_in?: number;
-        refresh_token?: string;
-        scope?: string;
-    }
-
     export interface IOath {
         readonly authorizationEndpoint: string;
         readonly tokenEndpoint: string;
         readonly clientId: string;
         readonly clientSecret: string;
         readonly redirectUri: string;
+        accessToken: string;
         authorizeAsync(scope: string, state: string): Promise<string>;
-        getAccessTokenAsync(grantType: "authorization_code", code: string, redirectUrl: string, clientId: string): Promise<AccessTokenResponse>;
     }
 }
 
@@ -81,6 +54,8 @@ namespace thdk.stock {
         public readonly tokenEndpoint: string;
         public readonly redirectUri: string;
 
+        public accessToken: string;
+
         constructor(network: INetwork, props: oauth.OAuthProperties) {
             this.network = network;
 
@@ -89,54 +64,42 @@ namespace thdk.stock {
             this.authorizationEndpoint = props.authorizationEndpoint;
             this.tokenEndpoint = props.tokenEndpoint;
             this.authorizationEndpoint = props.authorizationEndpoint;
-            this.redirectUri = props.redirectUri;
-        }   
-        
+            this.redirectUri = [location.protocol, '//', location.host, location.pathname].join('') + props.redirectUri;
+        }
+
         public authorizeAsync(scope: string, state: string): Promise<string> {
-            
-            const params: shutterstock.oauth.IShutterStockAuthorizationRequest = {
+
+            const params: thdk.oauth.IAuthorizationCodeRequest = {
                 client_id: this.clientId,
-                realm: "customer",
                 redirect_uri: this.redirectUri,
                 response_type: "code",
                 scope,
                 state
             };
             const authorizeUri = thdk.utils.addQueryStringParams(this.authorizationEndpoint, params);
-            
+
             const authorizeWindow = window.open(authorizeUri);
-            
+
             return new Promise<string>((resolve, reject) => {
-                window["shutterstockTokenReceived"] = (token: string) => {   
+                window["oauth2AccessTokenCallback"] = (success: boolean, token: string, msg?: string) => {
                     // remove the api loaded callback function
                     setTimeout(function () {
                         try {
-                            delete window["shutterstockTokenReceived"];
+                            delete window["oauth2AccessTokenCallback"];
                         } catch (e) { }
                     }, 20);
 
-                    resolve(token);
+                    if (success) {
+                        this.accessToken = token;
+                        resolve(token);
+                    }
+                    else {
+                        this.accessToken = "";
+                        reject(msg);
+                    }
                     authorizeWindow.close();
                 };
             });
-        }
-
-        public getAccessTokenAsync(grantType: "authorization_code", code: string, redirectUrl: string, clientId: string): Promise<oauth.AccessTokenResponse> {
-            const params: shutterstock.oauth.IShutterStockAccessTokenRequest = {
-                client_id: clientId,
-                client_secret: this.clientSecret,
-                code,
-                grant_type: grantType
-            };
-
-            return this.network.postAsync<oauth.IAccessTokenResponse>(this.tokenEndpoint, params).then(response => {
-                console.log(response);
-                const parsedResponse: oauth.AccessTokenResponse = {
-                    accessToken: response.access_token,
-                    tokenType: response.token_type
-                };
-                return parsedResponse;
-            })
         }
     }
 
@@ -158,12 +121,9 @@ namespace thdk.stock {
         }
 
         public authorizeAsync() {
-            
-           //  var oauth = new ShutterstockOAuth(options);
-           //  oauth.authorize();
-           this.oauth.authorizeAsync("user.email", "azerty").then(token => {
-               console.log(token);
-           })
+            this.oauth.authorizeAsync("user.email", "azerty").then(token => {
+                console.log(token);
+            })
         }
     }
 }

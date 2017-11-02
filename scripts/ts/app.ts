@@ -39,7 +39,7 @@ namespace thdk.stockarto {
                 clientSecret: config.shutterstock.clientSecret,
                 authorizationEndpoint: "https://api.shutterstock.com/v2/oauth/authorize",
                 tokenEndpoint: "https://api.shutterstock.com/v2/oauth/access_token",
-                redirectUri: "http://stockarto.com/develop/oauth/redirect.php"
+                redirectUri: "oauth/redirect.php"
             };
 
             const ssOauth: thdk.stock.ShutterStockOauth = new thdk.stock.ShutterStockOauth(network, oauthProps);
