@@ -105,9 +105,19 @@ namespace thdk.stock {
             const authorizeUri = thdk.utils.addQueryStringParams(this.authorizationEndpoint, params);
             
             const authorizeWindow = window.open(authorizeUri);
-
+            
             return new Promise<string>((resolve, reject) => {
+                window["shutterstockTokenReceived"] = (token: string) => {   
+                    // remove the api loaded callback function
+                    setTimeout(function () {
+                        try {
+                            delete window["shutterstockTokenReceived"];
+                        } catch (e) { }
+                    }, 20);
 
+                    resolve(token);
+                    authorizeWindow.close();
+                };
             });
         }
 
@@ -148,28 +158,12 @@ namespace thdk.stock {
         }
 
         public authorizeAsync() {
-
-            //build the oauth object
-            var options = {
-                client_id: this.oauth.clientId,
-                scope: "user.email",
-                redirect_endpoint: "oauth/redirect.html",
-                success: (data) => {
-                    console.log(data.code);
-                    this.oauth.getAccessTokenAsync("authorization_code", data.code, this.oauth.redirectUri, this.oauth.clientId).then(resp => {
-                        console.log(resp);
-                        if (resp.error) {
-                            // reject
-                        }
-                        else {
-                            console.log(resp.accessToken);
-                        }
-                    });
-                }
-            };
+            
            //  var oauth = new ShutterstockOAuth(options);
            //  oauth.authorize();
-           this.oauth.authorizeAsync("user.email", "azerty");
+           this.oauth.authorizeAsync("user.email", "azerty").then(token => {
+               console.log(token);
+           })
         }
     }
 }
