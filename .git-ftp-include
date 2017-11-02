@@ -1,4 +1,5 @@
 !scripts/config.js
+!oauth/redirect.php
 scripts/js/app.js:scripts/ts/app.ts
 scripts/js/map.js:scripts/ts/map.ts
 scripts/js/ss.js:scripts/ts/ss.ts
