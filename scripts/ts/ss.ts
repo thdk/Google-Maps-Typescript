@@ -57,7 +57,7 @@ namespace thdk.oauth {
         readonly clientId: string;
         readonly clientSecret: string;
         readonly redirectUri: string;
-        authorizeAsync(responseType: string, clientId: string, redirectUrl?: string, scope?: string, state?: string): Promise<string>;
+        authorizeAsync(scope: string, state: string): Promise<string>;
         getAccessTokenAsync(grantType: "authorization_code", code: string, redirectUrl: string, clientId: string): Promise<AccessTokenResponse>;
     }
 }
@@ -90,20 +90,25 @@ namespace thdk.stock {
             this.tokenEndpoint = props.tokenEndpoint;
             this.authorizationEndpoint = props.authorizationEndpoint;
             this.redirectUri = props.redirectUri;
-        }
-
-        public authorizeAsync(responseType: string, clientId: string, redirectUrl?: string, scope?: string, state?: string): Promise<string> {
+        }   
+        
+        public authorizeAsync(scope: string, state: string): Promise<string> {
+            
             const params: shutterstock.oauth.IShutterStockAuthorizationRequest = {
-                client_id: clientId,
+                client_id: this.clientId,
                 realm: "customer",
-                redirect_uri: redirectUrl,
-                response_type: responseType,
+                redirect_uri: this.redirectUri,
+                response_type: "code",
                 scope,
                 state
             };
-            const authorizeUri = thdk.utils.addQueryStringParams(this.tokenEndpoint, params);
+            const authorizeUri = thdk.utils.addQueryStringParams(this.authorizationEndpoint, params);
+            
+            const authorizeWindow = window.open(authorizeUri);
 
-            return this.network.getAsync(authorizeUri, params);
+            return new Promise<string>((resolve, reject) => {
+
+            });
         }
 
         public getAccessTokenAsync(grantType: "authorization_code", code: string, redirectUrl: string, clientId: string): Promise<oauth.AccessTokenResponse> {
@@ -143,6 +148,7 @@ namespace thdk.stock {
         }
 
         public authorizeAsync() {
+
             //build the oauth object
             var options = {
                 client_id: this.oauth.clientId,
@@ -161,8 +167,9 @@ namespace thdk.stock {
                     });
                 }
             };
-            var oauth = new ShutterstockOAuth(options);
-            oauth.authorize();
+           //  var oauth = new ShutterstockOAuth(options);
+           //  oauth.authorize();
+           this.oauth.authorizeAsync("user.email", "azerty");
         }
     }
 }
