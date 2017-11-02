@@ -128,6 +128,7 @@ namespace thdk.stockarto {
             this.mapClick(event);
         }
 
+        // mapClick
         private mapClick(event, place?: maps.placesservice.IPlaceResult) {
             if (this.mapservice.infowindow)
                 this.mapservice.infowindow.close();
